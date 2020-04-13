@@ -32,6 +32,7 @@
 from typing import Dict
 from kedro.pipeline import Pipeline
 
+import msha.pipelines.preprocess as preproc
 
 
 def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
@@ -44,8 +45,9 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         A mapping from a pipeline name to a ``Pipeline`` object.
 
     """
+    pp_pipeline = preproc.create_pipeline()
 
     return {
-        "__default__": Pipeline([])
+        "__default__": pp_pipeline,
+        "preprocess": pp_pipeline,
     }
-

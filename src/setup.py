@@ -28,9 +28,7 @@
 
 from setuptools import find_packages, setup
 
-entry_point = (
-    "msha = msha.run:run_package"
-)
+entry_point = "msha = msha.run:run_package"
 
 
 # get the dependencies and installs
