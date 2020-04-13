@@ -48,7 +48,7 @@ def create_pipeline(**kwargs):
                 func=preproce_production,
                 inputs="msha_production",
                 outputs="production_preproc",
-                name="preproc_production",
+                name="pp_production",
             ),
         ]
     )
