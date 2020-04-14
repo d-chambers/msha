@@ -24,11 +24,25 @@ COLUMN_MAP = {
     "DAYS_RESTRICT": "days_restricted",
     "DAYS_LOST": "days_lost",
     "NARRATIVE": None,
-    "ACCIDENT_DT": 'date',
+    "ACCIDENT_DT": "date",
+    "CURRENT_MINE_NAME": None,
+    "CURRENT_MINE_TYPE": None,
+    "LATTITUDE": None,
+    "LONGITUDE": None,
+    "PROD_SHIFTS_PER_DAY": None,
+    "CURRENT_STATUS_DT": "last_updated",
+    "STATE": "state",
+    "CURRENT_CONTROLLER_BEGIN_DT": "controller_start",
+    "PRIMARY_CANVASS": None,
+    "SECONDAY_CANVASS": None,
+    "NO_EMPLOYEES": "employee_count",
+    "AVG_EMPLOYEE_CNT": "employee_count",
+    "HOURS_WORKED": None,
+    "COAL_PRODUCTION": None,
 }
 
 
-def rename_and_drop(df):
+def rename(df):
     """
     Rename column names to names found in COLUMN_MAP or, if None, just lowercase.
     """
@@ -45,7 +59,6 @@ def drop_upper_case(df):
     return df.drop(columns=upper_cols)
 
 
-
 # --- Node functions
 
 
@@ -54,23 +67,37 @@ def preproc_accidents(df: pd.DataFrame) -> pd.DataFrame:
     Preprocessing for accidents.
     """
     out = (
-        df.assign(is_coal=df['COAL_METAL_IND'] == 'C')
-        .pipe(rename_and_drop)
+        df.assign(is_coal=df["COAL_METAL_IND"] == "C")
+        .assign(is_underground=df["SUBUNIT"] == "UNDERGROUND")
+        .pipe(rename)
         .pipe(drop_upper_case)
     )
-
-    breakpoint()
-    print(df)
     return out
 
 
 def preproce_mines(df: pd.DataFrame) -> pd.DataFrame:
     """Preprocessing for mines """
-
+    assignments = dict(
+        is_underground=df["CURRENT_MINE_TYPE"] == "Underground",
+        is_surface=df["CURRENT_MINE_TYPE"] == "Surface",
+        is_active=df["CURRENT_MINE_STATUS"] == "ACTIVE",
+        is_coal=df["PRIMARY_CANVASS"] == "Coal",
+        is_metal=df["PRIMARY_CANVASS"] == "Metal",
+    )
+    out = df.assign(**assignments).pipe(rename).pipe(drop_upper_case)
+    return out
 
 
 def preproce_production(df: pd.DataFrame) -> pd.DataFrame:
     """Preprocessing for production."""
+
+    def _add_production_date(df):
+        """Add the date to the projection using the year cols and quarter. """
+        dst = df["CAL_YR"].astype(str) + "-Q" + df["CAL_QTR"].astype(str)
+        df["date"] = pd.to_datetime(dst)
+        return df
+
+    return df.pipe(_add_production_date).pipe(rename).pipe(drop_upper_case)
 
 
 def dummy_download():

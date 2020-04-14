@@ -35,19 +35,19 @@ def create_pipeline(**kwargs):
             node(
                 func=preproc_accidents,
                 inputs="msha_accidents",
-                outputs="accidents_preproc",
+                outputs="pp_accidents",
                 name="pp_accidents",
             ),
             node(
                 func=preproce_mines,
                 inputs="msha_mines",
-                outputs="mines_preproc",
+                outputs="pp_mines",
                 name="pp_mines",
             ),
             node(
                 func=preproce_production,
                 inputs="msha_production",
-                outputs="production_preproc",
+                outputs="pp_production",
                 name="pp_production",
             ),
         ]

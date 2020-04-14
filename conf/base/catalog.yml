@@ -21,6 +21,7 @@ msha_mines:
   load_args:
     sep: '|'
     encoding: latin
+    parse_dates: ['CURRENT_STATUS_DT', 'CURRENT_CONTROLLER_BEGIN_DT']
     na_values: ['NO VALUE FOUND']
 
 msha_production:
@@ -35,14 +36,14 @@ msha_production:
 
 # --- pre processing dataframes
 
-accidents_preproc:
+pp_accidents:
   type: pickle.PickleDataSet
   filepath: data/02_clean/accidents.pkl
 
-production_preproc:
+pp_production:
   type: pickle.PickleDataSet
   filepath: data/02_clean/production.pkl
 
-mines_preproc:
+pp_mines:
   type: pickle.PickleDataSet
   filepath: data/02_clean/mines.pkl
