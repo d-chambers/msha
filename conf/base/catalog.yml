@@ -64,6 +64,13 @@ coal_accidents_agg:
 
 # A dataframe with ug coal ground control related accidents.
 # columns are severity classification.
-coal_ground_control_accidents:
+coal_gc_accidents_agg:
   type: pickle.PickleDataSet
   filepath: data/coal_01_aggs/coal_ug_gc_accients.pkl
+
+# A dataframe with ug coal ground control related accidents.
+# columns are severity classification.
+coal_gc_accidents_normalized_agg:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/accidents_normalized.pkl
+
