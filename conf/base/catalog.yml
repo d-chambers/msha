@@ -1,5 +1,5 @@
 
-# --- Downloads
+# --- Raw Downloads
 
 msha_accidents:
   type: msha.io.http.CSVHTTPDataSet
@@ -47,3 +47,23 @@ pp_production:
 pp_mines:
   type: pickle.PickleDataSet
   filepath: data/02_clean/mines.pkl
+
+
+# --- Coal specific
+
+# A dataframe with ug coal production aggregated by quarter
+coal_production_agg:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_ug_production.pkl
+
+# A dataframe with ug coal accidents of all types which caused
+# injury, aggregated by quarter
+coal_accidents_agg:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_ug_accidents.pkl
+
+# A dataframe with ug coal ground control related accidents.
+# columns are severity classification.
+coal_ground_control_accidents:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_ug_gc_accients.pkl

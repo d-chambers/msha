@@ -16,6 +16,7 @@ COLUMN_MAP = {
     "CLASSIFICATION": None,
     "ACCIDENT_TYPE": None,
     "NO_INJURIES": "injury_count",
+    "DEGREE INJRUY": None,
     "OCCUPATION": None,
     "ACTIVITY": None,
     "INJURY_SOURCE": None,
