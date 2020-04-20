@@ -105,3 +105,52 @@ class CSVHTTPDataSet(AbstractDataSet):
 
         # NOTE: we don't access the actual content here, which might be large.
         return response.status_code == requests.codes.OK  # pylint: disable=no-member
+
+
+class URLContentsDirectory(AbstractDataSet):
+    """
+    Given a dict of URL, download the contents and save each to a file (key).
+    """
+
+    def __init__(self, filepath=None):
+        self.filepath = Path(filepath)
+
+    def _load(self) -> Any:
+        raise DataSetError("cant load this dataset")
+
+    def _save(self, data: dict) -> None:
+        """
+        Save the contents of a dict to disk.
+        """
+        if self.filepath.exists():
+            return
+        for name, url in data.items():
+            path = self.filepath / name
+            path.parent.mkdir(exist_ok=True, parents=True)
+            content = self.execute_request(url).content
+            with path.open("wb") as fi:
+                fi.write(content)
+
+    @staticmethod
+    def execute_request(url):
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as exc:
+            if (
+                exc.response.status_code
+                == requests.codes.NOT_FOUND  # pylint: disable=no-member
+            ):
+                raise ValueError(
+                    "The server returned 404 for {}".format(url)
+                )
+            raise ValueError("Failed to fetch data")
+        except socket.error:
+            raise ValueError("Failed to connect to the remote server")
+        return response
+
+    def _describe(self) -> Dict[str, Any]:
+        return {}
+
+    def _exists(self) -> bool:
+        return self.filepath.exists()

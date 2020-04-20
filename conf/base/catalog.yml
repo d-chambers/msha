@@ -34,6 +34,12 @@ msha_production:
     encoding: latin
     na_values: ['NO VALUE FOUND']
 
+
+msha_definitions:
+  type: msha.io.http.URLContentsDirectory
+  filepath: data/01_raw/definitions
+
+
 # --- pre processing dataframes
 
 pp_accidents:

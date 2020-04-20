@@ -1,7 +1,10 @@
 """
 Nodes for simple pre-processing.
 """
+import socket
+
 import pandas as pd
+import requests
 
 # --- Utils
 
@@ -99,6 +102,18 @@ def preproce_production(df: pd.DataFrame) -> pd.DataFrame:
         return df
 
     return df.pipe(_add_production_date).pipe(rename).pipe(drop_upper_case)
+
+
+def download_definition_functions():
+    """This is used to download the definitions of each dataset's columns."""
+    base = "https://arlweb.msha.gov/OpenGovernmentData/DataSets/"
+    url_map = {
+        "accidents_definitions.txt": f"{base}Accidents_Definition_File.txt",
+        "prdoduction_definition.txt": f"{base}MineSProdQuarterly_Definition_File.txt",
+        "mines_definition.txt": f"{base}Mines_Definition_File.txt",
+    }
+
+    return url_map
 
 
 def dummy_download():

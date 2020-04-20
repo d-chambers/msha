@@ -1,0 +1,23 @@
+name: msha
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - pytest
+  - ipython
+  - jupyter
+  - jupyter_client
+  - jupyterlab
+  - pytest-cov
+  - pytest-mock
+  - nbstripout
+  - wheel
+  - pip
+  - gdal
+  - black
+  - pyproj
+  - pandas < 1.0
+  - matplotlib
+  - pip:
+      - -rrequirements.txt

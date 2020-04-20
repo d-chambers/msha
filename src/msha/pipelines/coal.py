@@ -27,9 +27,9 @@ nodes = [
     ),
     node(
         coal.normalized_ground_control_coal_accidents,
-        name='normalized accidents',
-        inputs=['coal_gc_accidents_agg', 'coal_production_agg'],
-        outputs='coal_gc_accidents_normalized_agg',
+        name="normalized accidents",
+        inputs=["coal_gc_accidents_agg", "coal_production_agg"],
+        outputs="coal_gc_accidents_normalized_agg",
     ),
 ]
 

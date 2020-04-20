@@ -8,12 +8,19 @@ from msha.nodes.preprocess import (
     preproc_accidents,
     preproce_mines,
     preproce_production,
+    download_definition_functions,
 )
 
 
 def create_pipeline(**kwargs):
     return Pipeline(
         [
+            node(
+                func=download_definition_functions,
+                name="download_definitions",
+                inputs=[],
+                outputs="msha_definitions",
+            ),
             node(
                 func=dummy_download,
                 inputs=[],

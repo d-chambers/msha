@@ -3,7 +3,11 @@ Nodes for calculating aggregated underground coal stats.
 """
 import pandas as pd
 
-from msha.constants import GROUND_CONTROL_CLASSIFICATIONS, NON_INJURY_DEGREES, SEVERE_INJURY_DEGREES
+from msha.constants import (
+    GROUND_CONTROL_CLASSIFICATIONS,
+    NON_INJURY_DEGREES,
+    SEVERE_INJURY_DEGREES,
+)
 
 
 def aggregate_production(prod_df, mines_df):
@@ -41,15 +45,15 @@ def aggregate_accidents(df):
 
 def ground_control_coal_accidents(df):
     """Create a dataframe of ground-control related coal accidents."""
-    con1 = df['is_coal']
-    con2 = df['is_underground']
-    con3 = df['classification'].isin(GROUND_CONTROL_CLASSIFICATIONS)
+    con1 = df["is_coal"]
+    con2 = df["is_underground"]
+    con3 = df["classification"].isin(GROUND_CONTROL_CLASSIFICATIONS)
     df_sub = df[con1 & con2 & con3]
     # group by quarter, value_count on degree injury
     grouper = pd.Grouper(key="date", freq="q")
     gr = df_sub.groupby(grouper)["degree_injury"]
     counts = gr.value_counts()
-    counts.name = 'count'
+    counts.name = "count"
     piv_kwargs = dict(index="date", columns="degree_injury", values="count")
     out = counts.reset_index().pivot(**piv_kwargs).fillna(0.0).astype(int)
     return out
@@ -62,7 +66,7 @@ def normalized_ground_control_coal_accidents(accident_df, prod_df):
     adf = accident_df.loc[new_dates]
     pdf = prod_df.loc[new_dates]
     # assign a columns of one for no normalizations
-    pdf['no_normalization'] = 1
+    pdf["no_normalization"] = 1
     # get non, injury, and severe categories
     category = dict(
         injury=set(adf) - set(NON_INJURY_DEGREES),
@@ -79,5 +83,6 @@ def normalized_ground_control_coal_accidents(accident_df, prod_df):
             out.loc[:, (normalization_col_name, category_name)] = norm
 
     import matplotlib.pyplot as plt
+
     breakpoint()
     return out
