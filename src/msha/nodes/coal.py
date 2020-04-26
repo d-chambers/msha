@@ -81,8 +81,8 @@ def normalized_ground_control_coal_accidents(accident_df, prod_df):
         for normalization_col_name, series in pdf.iteritems():
             norm = adf_ / series
             out.loc[:, (normalization_col_name, category_name)] = norm
-
-    import matplotlib.pyplot as plt
-
-    breakpoint()
     return out
+
+
+def plot_prod(prod_df):
+    """Make a plot of production/employee count/hours"""
