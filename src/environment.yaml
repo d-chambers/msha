@@ -1,4 +1,3 @@
-name: msha
 channels:
   - conda-forge
   - defaults
@@ -21,3 +20,4 @@ dependencies:
   - matplotlib
   - pip:
       - -rrequirements.txt
+      - pdbpp
