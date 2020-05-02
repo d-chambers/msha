@@ -80,3 +80,12 @@ coal_gc_accidents_normalized_agg:
   type: pickle.PickleDataSet
   filepath: data/coal_01_aggs/accidents_normalized.pkl
 
+# --- coal visualizations
+coal_prod_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/production.pdf
+
+
+
+
+

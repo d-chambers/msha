@@ -31,6 +31,12 @@ nodes = [
         inputs=["coal_gc_accidents_agg", "coal_production_agg"],
         outputs="coal_gc_accidents_normalized_agg",
     ),
+    node(
+        coal.plot_prod,
+        name='plot_production',
+        outputs='coal_prod_plots',
+        inputs='coal_production_agg',
+    )
 ]
 
 

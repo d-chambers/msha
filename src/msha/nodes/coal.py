@@ -1,7 +1,13 @@
 """
 Nodes for calculating aggregated underground coal stats.
 """
+import matplotlib.pyplot as plt
 import pandas as pd
+
+from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
+
+
 
 from msha.constants import (
     GROUND_CONTROL_CLASSIFICATIONS,
@@ -23,7 +29,10 @@ def aggregate_production(prod_df, mines_df):
     # group by quarter, get stats, employee count,
     grouper = pd.Grouper(key="date", freq="q")
     cols = ["employee_count", "hours_worked", "coal_production"]
-    out = prod_sub.groupby(grouper)[cols].sum()
+    gb = prod_sub.groupby(grouper)
+    out = gb[cols].sum()
+    # add number of active mines
+    out['active_mine_count'] = gb['mine_id'].unique().apply(lambda x: len(x))
     return out
 
 
@@ -86,3 +95,17 @@ def normalized_ground_control_coal_accidents(accident_df, prod_df):
 
 def plot_prod(prod_df):
     """Make a plot of production/employee count/hours"""
+    df = prod_df
+    fig, ax1 = plt.subplots()
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Employee Count')
+    ax1.plot(df.index, df['employee_count'], color='b', label='employee count')
+    ax2 = plt.twinx(ax1)
+    ax2.plot(prod_df.index, prod_df['active_mine_count'], color='red', label='active mine count')
+    ax2.plot([], [], color='b', label='employee count')
+    ax2.set_ylabel('Active Mine Count')
+    plt.legend()
+    # plt.plot(df.index, df['employee_count'])
+    breakpoint()
+    plt.show()
+
