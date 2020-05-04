@@ -80,10 +80,16 @@ coal_gc_accidents_normalized_agg:
   type: pickle.PickleDataSet
   filepath: data/coal_01_aggs/accidents_normalized.pkl
 
+
+# Dateframe with descriptive stats of miner experience by quarter
+coal_gc_experience_df:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_gc_experience.pkl
+
 # --- coal visualizations
-coal_prod_plot:
+coal_employee_mine_count_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
-  filepath: data/coal_01_aggs/figures/production.pdf
+  filepath: data/coal_01_aggs/figures/production.png
 
 
 
