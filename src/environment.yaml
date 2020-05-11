@@ -19,6 +19,7 @@ dependencies:
   - pandas < 1.0
   - matplotlib
   - kedro
+  - seaborn
   - pip:
       - -rrequirements.txt
       - pdbpp

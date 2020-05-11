@@ -34,7 +34,7 @@ COLUMN_MAP = {
     "ACCIDENT_DT": "date",
     "CURRENT_MINE_NAME": None,
     "CURRENT_MINE_TYPE": None,
-    "LATTITUDE": None,
+    "LATITUDE": None,
     "LONGITUDE": None,
     "PROD_SHIFTS_PER_DAY": None,
     "CURRENT_STATUS_DT": "last_updated",

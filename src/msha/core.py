@@ -1,8 +1,6 @@
 import pandas as pd
 
-from msha.constants import NON_INJURY_DEGREES, SEVERE_INJURY_DEGREES
-
-
+from msha.constants import NON_INJURY_DEGREES, SEVERE_INJURY_DEGREES, GROUND_CONTROL_CLASSIFICATIONS, EASTERN_STATE_CODES
 
 
 def create_normalizer_df(prod_df, mines_df):
@@ -49,6 +47,9 @@ def aggregate_accidents(df, column):
 
 def aggregate_descriptive_stats(df, column):
     """Aggregate a dataframe by quarter for one columns descriptive stats."""
+    grouper = pd.Grouper(key="date", freq="q")
+    out = df.groupby(grouper)[column].describe()
+    return out
 
 
 def normalize_accidents(accident_df, norm_df) -> pd.DataFrame:
@@ -76,7 +77,7 @@ def normalize_accidents(accident_df, norm_df) -> pd.DataFrame:
     pdf["no_normalization"] = 1
     # get non, injury, and severe categories
     category = dict(
-        injury=set(adf) - set(NON_INJURY_DEGREES),
+        injury=set(adf.columns) - set(NON_INJURY_DEGREES),
         non_injury=NON_INJURY_DEGREES,
         severe=SEVERE_INJURY_DEGREES,
     )
@@ -89,3 +90,21 @@ def normalize_accidents(accident_df, norm_df) -> pd.DataFrame:
             norm = adf_ / series
             out.loc[:, (normalization_col_name, category_name)] = norm
     return out
+
+
+def is_ug_coal(df):
+    """ Return a bool series indicating if each row is underground coal."""
+    assert {'is_underground', 'is_coal'}.issubset(set(df.columns))
+    return df["is_underground"] & df["is_coal"]
+
+
+def is_ground_control(df):
+    """
+    Return a bool series indicating if the accident is ground control related.
+    """
+    return df["classification"].isin(GROUND_CONTROL_CLASSIFICATIONS)
+
+
+def is_eastern_us(df):
+    """Return a series indicating if the mine is located east of missipi"""
+    return df['state'].isin(set(EASTERN_STATE_CODES))

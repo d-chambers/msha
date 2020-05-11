@@ -1,6 +1,7 @@
 """
 Pipelines for making coal datasets.
 """
+import msha.core
 import msha.nodes.coal as coal
 
 from kedro.pipeline import node, Pipeline
@@ -41,9 +42,26 @@ nodes = [
         coal.plot_employees_and_mines,
         name='plot_production',
         outputs='coal_employee_mine_count_plot',
-        inputs='coal_production_agg',
+        inputs=['coal_production_agg', 'coal_gc_accidents_normalized_agg'],
     ),
-
+    node(
+        coal.plot_accidents,
+        name='plot_accidents',
+        outputs='coal_accidents_plot',
+        inputs=['coal_gc_accidents_normalized_agg', 'coal_gc_experience_df'],
+    ),
+    node(
+        coal.plot_mining_method,
+        name='plot_mining_method',
+        outputs='coal_mining_method_plot',
+        inputs='pp_accidents',
+    ),
+    node(
+        coal.plot_region,
+        name='plot_region',
+        outputs='regional_gc_accidents_plot',
+        inputs=['pp_accidents', 'pp_mines'],
+    )
 ]
 
 
