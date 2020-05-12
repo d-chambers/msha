@@ -98,7 +98,7 @@ def plot_employees_and_mines(prod_df, accidents_normed):
     ax1.plot(df.index, df['employee_count']/1_000, color=c1)
     ax1_twin = plt.twinx(ax1)
     ax1_twin.plot(injuries.index, injuries, color=c2)
-    ax1_twin.set_ylabel('Quarterly Ground Control Injuries')
+    ax1_twin.set_ylabel('GC Injuries per Quarter')
     # color axis/ticks
     ax1_twin.spines['left'].set_color(c1)
     ax1_twin.spines['right'].set_color(c2)
@@ -111,7 +111,7 @@ def plot_employees_and_mines(prod_df, accidents_normed):
     ax2.plot(prod_df.index, prod_df['coal_production']/1_000_000, color=c3)
     ax2.set_ylabel('Short Tones Produced ($10^6$)')
     ax2_twin.plot(prod_df.index, prod_df['active_mine_count'], color=c4)
-    ax2_twin.set_ylabel('Active Underground Coal Mines')
+    ax2_twin.set_ylabel('Active UG Coal Mines')
     # color axis/ticks
     ax2_twin.spines['left'].set_color(c3)
     ax2_twin.spines['right'].set_color(c4)
@@ -119,6 +119,7 @@ def plot_employees_and_mines(prod_df, accidents_normed):
     ax2.tick_params(axis='y', colors=c3)
     plt.tight_layout()
     ax2_twin.grid(False), ax2.grid(False)
+    plt.subplots_adjust(wspace=0, hspace=.04)
     return plt
 
 
@@ -139,14 +140,10 @@ def plot_accidents(accident_df, experience_df):
     # define plot colors
     c1, c2 = ("#176EFF", '#FF4124')
     # plot production and active mine count
-    total_injuries = accident_df[('no_normalization', 'injury')]
     hour_normed = accident_df[('hours_worked', 'injury')] * 1_000_000
-    coal_produced = accident_df[('coal_production', 'injury')] * 1_000_000
-
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5.5, 7), sharex=True)
     ax1.set_ylabel('GC Injuries per $10^6$ Hours')
     ax1.plot(hour_normed.index, hour_normed, color=c1)
-
     plot_experience(ax2)
     ax2.set_xlabel('Date')
     plt.subplots_adjust(wspace=0, hspace=.04)
@@ -157,10 +154,7 @@ def plot_mining_method(accidents_df):
     """
     Plot the mining method related to the injuries
     """
-
-
     # get df of UG coal GC accidents
-
     df = accidents_df[is_ug_gc_accidents(accidents_df)]
     # separate longwall and cm
     lw = aggregate_injuries(df, ug_mining_method='Longwall')
@@ -171,11 +165,11 @@ def plot_mining_method(accidents_df):
     ax1.plot(cm.index, cm, label='cont. miner')
     ax1.legend(title='Mining Method', fancybox=True)
     ax1.set_xlabel('Year')
-    ax1.set_ylabel('Injuries Per Quarter')
+    ax1.set_ylabel('GC Injuries Per Quarter')
     return plt
 
 
-def plot_region(accident_df, mines_df):
+def plot_region(accident_df, mines_df, production_df):
     """Plot the number of mines and gc accidents by region """
     def _get_regional_accidents(accident_df, mines_df):
         # get east/west accidents and aggregate
@@ -184,26 +178,44 @@ def plot_region(accident_df, mines_df):
         ug_gc = is_ug_coal(accident_df)
         return accident_df[contains_mines & ug_gc]
 
+    def _get_accident_rate(accident_df, prod_df):
+        """Return a series of accident rates."""
+        common_dates = sorted(set(accident_df.index) & set(prod_df.index))
+        adf, pdf = accident_df.loc[common_dates], prod_df.loc[common_dates]
+        return (adf / pdf['hours_worked']) * 1_000_000
 
+    colors = ['red', 'blue']
     is_east = is_eastern_us(mines_df)
     east_ids = mines_df[is_east]['mine_id'].unique()
     east_mines = mines_df[mines_df['mine_id'].isin(east_ids)]
     west_mines = mines_df[~mines_df['mine_id'].isin(east_ids)]
-    #TODO STart here
-    # top plot is accidnets east/west
-    # bottom is number of mines east/west
+    # get accidents
     east = _get_regional_accidents(accident_df, east_mines)
     west = _get_regional_accidents(accident_df, west_mines)
-    breakpoint()
-    print(east)
-    print(west)
-
-
-
-
-
-
-
-
-
-
+    east_gc_coal = aggregate_injuries(east)
+    west_gc_coal = aggregate_injuries(west)
+    # init figs
+    plt.clf()
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(5.5, 10.5), sharex=True)
+    # plot mines
+    east_prod = aggregate_coal_production(production_df, east_mines)
+    west_prod = aggregate_coal_production(production_df, west_mines)
+    ax1.plot(east_prod.index, east_prod['active_mine_count'], label='east', color=colors[0])
+    ax1.plot(west_prod.index, west_prod['active_mine_count'], label='west', color=colors[1])
+    ax1.set_ylabel('Active UG Coal Mines')
+    # plot accidents
+    ax2.plot(east_gc_coal.index, east_gc_coal, label='east', color=colors[0])
+    ax2.plot(west_gc_coal.index, west_gc_coal, label='west', color=colors[1])
+    ax2.set_ylabel('GC Injuries per Quarter')
+    ax2.legend()
+    # plot accident rates
+    acc_rate_east = _get_accident_rate(east_gc_coal, east_prod)
+    acc_rate_west = _get_accident_rate(west_gc_coal, west_prod)
+    ax3.plot(acc_rate_east.index, acc_rate_east, label='east', color=colors[0])
+    ax3.plot(acc_rate_west.index, acc_rate_west, label='west', color=colors[1])
+    ax3.set_xlabel('year')
+    ax3.set_ylabel('GC Injuries per $10^6$ Hours')
+    # adjust spacing, tighten
+    plt.subplots_adjust(wspace=0, hspace=.04)
+    plt.tight_layout()
+    return plt

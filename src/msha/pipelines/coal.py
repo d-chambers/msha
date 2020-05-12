@@ -60,7 +60,7 @@ nodes = [
         coal.plot_region,
         name='plot_region',
         outputs='regional_gc_accidents_plot',
-        inputs=['pp_accidents', 'pp_mines'],
+        inputs=['pp_accidents', 'pp_mines', 'pp_production'],
     )
 ]
 

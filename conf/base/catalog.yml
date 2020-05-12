@@ -92,7 +92,6 @@ coal_employee_mine_count_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/coal_01_aggs/figures/overview.png
 
-
 coal_accidents_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/coal_01_aggs/figures/accident_rate_years_exp.png
@@ -101,6 +100,9 @@ coal_mining_method_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/coal_01_aggs/figures/mining_method.png
 
+regional_gc_accidents_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/regional_plot.png
 
 
 
