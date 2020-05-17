@@ -24,7 +24,7 @@ COLUMN_MAP = {
     "ACTIVITY": None,
     "INJURY_SOURCE": None,
     "NATURE_INJURY": None,
-    "TOT_EXPER": 'total_experience',
+    "TOT_EXPER": "total_experience",
     "MINE_EXPER": "mine_experience",
     "JOB_EXPER": "job_experience",
     "INJ_BODY_PART": "body_part",

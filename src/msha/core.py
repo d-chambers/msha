@@ -1,6 +1,11 @@
 import pandas as pd
 
-from msha.constants import NON_INJURY_DEGREES, SEVERE_INJURY_DEGREES, GROUND_CONTROL_CLASSIFICATIONS, EASTERN_STATE_CODES
+from msha.constants import (
+    NON_INJURY_DEGREES,
+    SEVERE_INJURY_DEGREES,
+    GROUND_CONTROL_CLASSIFICATIONS,
+    EASTERN_STATE_CODES,
+)
 
 
 def create_normalizer_df(prod_df, mines_df):
@@ -22,15 +27,15 @@ def create_normalizer_df(prod_df, mines_df):
     A dataframe of mine stats for
 
     """
-    mine_ids = mines_df['mine_id'].unique()
-    prod_sub = prod_df[prod_df['mine_id'].isin(mine_ids)]
+    mine_ids = mines_df["mine_id"].unique()
+    prod_sub = prod_df[prod_df["mine_id"].isin(mine_ids)]
     # group by quarter, get stats, employee count,
     grouper = pd.Grouper(key="date", freq="q")
     cols = ["employee_count", "hours_worked", "coal_production"]
     gb = prod_sub.groupby(grouper)
     out = gb[cols].sum()
     # add number of active mines
-    out['active_mine_count'] = gb['mine_id'].unique().apply(lambda x: len(x))
+    out["active_mine_count"] = gb["mine_id"].unique().apply(lambda x: len(x))
     return out
 
 
@@ -94,7 +99,7 @@ def normalize_accidents(accident_df, norm_df) -> pd.DataFrame:
 
 def is_ug_coal(df):
     """ Return a bool series indicating if each row is underground coal."""
-    assert {'is_underground', 'is_coal'}.issubset(set(df.columns))
+    assert {"is_underground", "is_coal"}.issubset(set(df.columns))
     return df["is_underground"] & df["is_coal"]
 
 
@@ -107,4 +112,4 @@ def is_ground_control(df):
 
 def is_eastern_us(df):
     """Return a series indicating if the mine is located east of missipi"""
-    return df['state'].isin(set(EASTERN_STATE_CODES))
+    return df["state"].isin(set(EASTERN_STATE_CODES))

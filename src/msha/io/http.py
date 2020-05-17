@@ -141,9 +141,7 @@ class URLContentsDirectory(AbstractDataSet):
                 exc.response.status_code
                 == requests.codes.NOT_FOUND  # pylint: disable=no-member
             ):
-                raise ValueError(
-                    "The server returned 404 for {}".format(url)
-                )
+                raise ValueError("The server returned 404 for {}".format(url))
             raise ValueError("Failed to fetch data")
         except socket.error:
             raise ValueError("Failed to connect to the remote server")
