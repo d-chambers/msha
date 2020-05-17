@@ -45,7 +45,6 @@ def is_ug_gc_accidents(df):
 
 def ground_control_coal_accidents(df):
     """Create a dataframe of ground-control related coal accidents."""
-
     df_sub = df[is_ug_coal(df) & is_ground_control(df)]
     return aggregate_accidents(df_sub, column='degree_injury')
 
@@ -79,6 +78,28 @@ def aggregate_gc_coal_experience_stats(accident_df):
     con3 = accident_df["classification"].isin(GROUND_CONTROL_CLASSIFICATIONS)
     sub_df = accident_df[is_ug_coal(accident_df) & con3]
     return aggregate_descriptive_stats(sub_df, 'total_experience')
+
+
+def get_label_size_label(col, col_num, col_count):
+    """ Make nice labels for pandas groups. """
+    if col_num == 0:
+        return f"< {int(col.right)}"
+    elif col_num == col_count - 1:
+        return f"> {int(col.left)}"
+    return f"({int(col.left)}, {int(col.right)}]"
+
+
+def get_ug_coal_prod_and_mines(prod_df, mine_df):
+    """Return the filtered dfs for production and UG coal."""
+    # get a dataframe of just UG coal production
+    ug_coal_mines = mine_df[mine_df['is_underground'] & mine_df['is_coal']]
+    df = prod_df[
+        prod_df['mine_id'].isin(ug_coal_mines['mine_id'].unique())
+        & (prod_df['subunit'] == 'UNDERGROUND')
+        ]
+    # remove mines with zero employees/production
+    df = df[(df['coal_production'] > 0) & (df['employee_count'])]
+    return df, ug_coal_mines
 
 
 # ----- Plotting functions
@@ -219,3 +240,89 @@ def plot_region(accident_df, mines_df, production_df):
     plt.subplots_adjust(wspace=0, hspace=.04)
     plt.tight_layout()
     return plt
+
+
+def plot_employee_number_histograms(prod_df, mine_df):
+    """
+    Create a histogram of employees per mine by year.
+    """
+
+    plt.clf()
+    df, ug_coal_mines = get_ug_coal_prod_and_mines(prod_df, mine_df)
+    # get 5 bins of employee count
+    df['qcount'] = pd.qcut(df['employee_count'], 4)
+    grouper = pd.Grouper(freq='Y', key='date')
+    out = df.groupby(grouper)['qcount'].value_counts()
+    out.name='count'
+    # pivot out df
+    piv_kwargs = dict(index="date", columns='qcount', values="count")
+    piv = out.to_frame().reset_index().pivot(**piv_kwargs)
+    piv_percentage = piv.divide(piv.sum(axis=1), axis=0) * 100
+    # now plot
+    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
+    dff = piv_percentage
+    for col_num in range(len(dff.columns)):
+        col = dff.columns[col_num]
+        if col_num == 0:
+            bottom=None
+        else:
+            bottom = dff[dff.columns[:col_num]].sum(axis=1).values
+        label = get_label_size_label(col, col_num, len(dff.columns))
+        ser = dff[col]
+        x_labels = ser.index.year
+        ax1.bar(x_labels, ser.values, label=label, bottom=bottom)
+        ax1.set_xticks(x_labels[::4])
+    # set labels
+    ax1.set_ylabel('% of UG Coal Mines')
+    ax1.set_xlabel('Year')
+    # put legend on top
+    # box = ax1.get_position()
+    # ax1.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+    bbox_to_anchor = (.92, .5)
+    # Put a legend to the right of the current axis
+    ax1.legend(loc='center left', bbox_to_anchor=bbox_to_anchor, title='Employee Count')
+    plt.tight_layout()
+    return plt
+
+
+def plot_accident_rates_by_size(prod_df, mine_df, accidents_df):
+    """
+    Create a plot of accident rates.
+    """
+
+    def _get_mine_year_quarter(df):
+        """Get a columns mine_id_year_qt"""
+        date = df['date'].dt
+        year = date.year.astype(str)
+        # quarter = date.quarter.astype(str)
+        mine_id = df['mine_id']
+        return mine_id.astype(str) + '.' + year
+
+    plt.clf()
+    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
+    grouper = pd.Grouper(key="date", freq="y")
+    prod_df, mine_df = get_ug_coal_prod_and_mines(prod_df, mine_df)
+    prod_df['qcount'] = pd.qcut(prod_df['employee_count'], 4)
+    prod_df = prod_df.sort_values('qcount')
+    prod_df['myq'] = _get_mine_year_quarter(prod_df)
+    categories = sorted(prod_df['qcount'].unique())
+    # get accidents for UG coal where injuries resulted
+    con1 = is_ug_coal(accidents_df)
+    con2 = is_ground_control(accidents_df)
+    con3 = accidents_df['degree_injury'] != 'ACCIDENT ONLY'
+    acc_df = accidents_df[con1 & con2 & con3 ]
+    acc_df['myq'] = _get_mine_year_quarter(acc_df)
+    for category, sub_prod in prod_df.groupby('qcount'):
+        # get injuries associated with this group
+        label = get_label_size_label(category, categories.index(category), len(categories))
+        df = acc_df[acc_df['myq'].isin(sub_prod['myq'].unique())]
+        accidents = df.groupby(grouper).size()
+        hours = sub_prod.groupby(grouper)['hours_worked'].sum()
+        out = (accidents / hours).fillna(0) * 1_000_000
+        ax1.plot(out.index, out, label=label)
+    plt.legend(title='Employee Count')
+    ax1.set_xlabel('Year')
+    ax1.set_ylabel('GC Injures per $10^6$ Hours ')
+    return plt
+

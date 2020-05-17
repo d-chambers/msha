@@ -61,7 +61,19 @@ nodes = [
         name='plot_region',
         outputs='regional_gc_accidents_plot',
         inputs=['pp_accidents', 'pp_mines', 'pp_production'],
-    )
+    ),
+    node(
+        coal.plot_employee_number_histograms,
+        name='plot_employee_number',
+        outputs='employee_numbers',
+        inputs=['pp_production', 'pp_mines'],
+    ),
+    node(
+        coal.plot_accident_rates_by_size,
+        name='plot_accident_rates_by_size',
+        outputs='accident_rate_by_size',
+        inputs=['pp_production', 'pp_mines', 'pp_accidents'],
+    ),
 ]
 
 
