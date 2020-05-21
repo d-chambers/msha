@@ -118,8 +118,8 @@ def plot_employees_and_mines(prod_df, accidents_normed):
     # plot production and active mine count
     injuries = accidents_normed[("no_normalization", "injury")]
     df = prod_df
-    fig, (ax2, ax1) = plt.subplots(2, 1, figsize=(5.5, 7), sharex=True)
-    ax1.set_xlabel("Date")
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5.5, 7), sharex=True)
+    # ax1.set_xlabel("Date")
     ax1.set_ylabel("Employees ($10^3$)")
     ax1.plot(df.index, df["employee_count"] / 1_000, color=c1)
     ax1_twin = plt.twinx(ax1)
@@ -138,6 +138,8 @@ def plot_employees_and_mines(prod_df, accidents_normed):
     ax2.set_ylabel("Short Tones Produced ($10^6$)")
     ax2_twin.plot(prod_df.index, prod_df["active_mine_count"], color=c4)
     ax2_twin.set_ylabel("Active UG Coal Mines")
+    ax2.set_xlabel("Year")
+
     # color axis/ticks
     ax2_twin.spines["left"].set_color(c3)
     ax2_twin.spines["right"].set_color(c4)
@@ -252,7 +254,7 @@ def plot_region(accident_df, mines_df, production_df):
     return plt
 
 
-def plot_employee_number_histograms(prod_df, mine_df):
+def plot_employee_by_mine(prod_df, mine_df):
     """
     Create a histogram of employees per mine by year.
     """
@@ -267,7 +269,8 @@ def plot_employee_number_histograms(prod_df, mine_df):
     # pivot out df
     piv_kwargs = dict(index="date", columns="qcount", values="count")
     piv = out.to_frame().reset_index().pivot(**piv_kwargs)
-    piv_percentage = piv.divide(piv.sum(axis=1), axis=0) * 100
+    # piv_percentage = piv.divide(piv.sum(axis=1), axis=0) * 100
+    piv_percentage = piv
     # now plot
     fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
     dff = piv_percentage

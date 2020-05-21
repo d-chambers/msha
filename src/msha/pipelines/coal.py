@@ -63,7 +63,7 @@ nodes = [
         inputs=["pp_accidents", "pp_mines", "pp_production"],
     ),
     node(
-        coal.plot_employee_number_histograms,
+        coal.plot_employee_by_mine,
         name="plot_employee_number",
         outputs="employee_numbers",
         inputs=["pp_production", "pp_mines"],
