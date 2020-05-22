@@ -58,10 +58,11 @@ def aggregate_coal_production(prod_df, mines_df):
     """ Aggregate production by quarter. """
     # filter production to only include underground coal mines
     # and only the underground subunits
-    mine_sub = mines_df[is_ug_coal(mines_df)]
-    con2 = prod_df["subunit"] == "UNDERGROUND"
-    prod_sub = prod_df[con2]
-    return create_normalizer_df(prod_sub, mine_sub)
+    prod, mines = get_ug_coal_prod_and_mines(prod_df, mines_df)
+    # mine_sub = mines_df[is_ug_coal(mines_df)]
+    # con2 = prod_df["subunit"] == "UNDERGROUND"
+    # prod_sub = prod_df[con2]
+    return create_normalizer_df(prod, mines)
 
 
 def aggregate_coal_accidents_by_classification(df):
@@ -94,7 +95,7 @@ def get_label_size_label(col, col_num, col_count):
     return f"({int(col.left)}, {int(col.right)}]"
 
 
-def get_ug_coal_prod_and_mines(prod_df, mine_df):
+def get_ug_coal_prod_and_mines(prod_df, mine_df, qbins=4):
     """Return the filtered dfs for production and UG coal."""
     # get a dataframe of just UG coal production
     ug_coal_mines = mine_df[mine_df["is_underground"] & mine_df["is_coal"]]
@@ -103,7 +104,9 @@ def get_ug_coal_prod_and_mines(prod_df, mine_df):
         & (prod_df["subunit"] == "UNDERGROUND")
     ]
     # remove mines with zero employees/production
-    df = df[(df["coal_production"] > 0) & (df["employee_count"])]
+    df = df[(df["coal_production"] > 0) & (df["employee_count"] > 0)]
+    # add quant bins
+    df["qcount"] = pd.qcut(df["employee_count"], qbins)
     return df, ug_coal_mines
 
 
@@ -112,6 +115,7 @@ def get_ug_coal_prod_and_mines(prod_df, mine_df):
 
 def plot_employees_and_mines(prod_df, accidents_normed):
     """Make a plot of employee count and number of coal mines."""
+    breakpoint()
     plt.clf()
     # define plot colors
     c1, c2 = ("#176EFF", "#FF4124")
@@ -139,7 +143,6 @@ def plot_employees_and_mines(prod_df, accidents_normed):
     ax2_twin.plot(prod_df.index, prod_df["active_mine_count"], color=c4)
     ax2_twin.set_ylabel("Active UG Coal Mines")
     ax2.set_xlabel("Year")
-
     # color axis/ticks
     ax2_twin.spines["left"].set_color(c3)
     ax2_twin.spines["right"].set_color(c4)
@@ -256,15 +259,13 @@ def plot_region(accident_df, mines_df, production_df):
 
 def plot_employee_by_mine(prod_df, mine_df):
     """
-    Create a histogram of employees per mine by year.
+    Create a histogram of number of mines with their size.
     """
-
     plt.clf()
-    df, ug_coal_mines = get_ug_coal_prod_and_mines(prod_df, mine_df)
+    prod, ug_coal_mines = get_ug_coal_prod_and_mines(prod_df, mine_df)
     # get 5 bins of employee count
-    df["qcount"] = pd.qcut(df["employee_count"], 4)
     grouper = pd.Grouper(freq="Y", key="date")
-    out = df.groupby(grouper)["qcount"].value_counts()
+    out = prod.groupby(grouper)["qcount"].value_counts()
     out.name = "count"
     # pivot out df
     piv_kwargs = dict(index="date", columns="qcount", values="count")
