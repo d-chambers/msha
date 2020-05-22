@@ -33,6 +33,8 @@ msha_production:
     sep: "|"
     encoding: latin
     na_values: ['NO VALUE FOUND']
+    skiprows: [10899,]  # Found a bad value here, need to skip
+
 
 
 msha_definitions:
