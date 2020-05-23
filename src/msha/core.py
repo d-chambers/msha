@@ -8,7 +8,7 @@ from msha.constants import (
 )
 
 
-def create_normalizer_df(prod_df, mines_df):
+def create_normalizer_df(prod_df, mines_df=None, freq='q'):
     """
     Create an aggregated dataframe of mine production/labor stats.
 
@@ -27,21 +27,25 @@ def create_normalizer_df(prod_df, mines_df):
     A dataframe of mine stats for
 
     """
-    mine_ids = mines_df["mine_id"].unique()
-    prod_sub = prod_df[prod_df["mine_id"].isin(mine_ids)]
+    if mines_df is not None:
+        mine_ids = mines_df["mine_id"].unique()
+        prod_df = prod_df[prod_df["mine_id"].isin(mine_ids)]
     # group by quarter, get stats, employee count,
-    grouper = pd.Grouper(key="date", freq="q")
+    grouper = pd.Grouper(key="date", freq=freq)
     cols = ["employee_count", "hours_worked", "coal_production"]
-    gb = prod_sub.groupby(grouper)
+    gb = prod_df.groupby(grouper)
     out = gb[cols].sum()
     # add number of active mines
     out["active_mine_count"] = gb["mine_id"].unique().apply(lambda x: len(x))
+    out['no_normalization'] = 1
     return out
 
 
-def aggregate_accidents(df, column):
-    """Aggregate injuries for each quarter by classification."""
-    grouper = pd.Grouper(key="date", freq="q")
+def aggregate_columns(df, column, freq='q'):
+    """Aggregate columns by """
+    grouper = pd.Grouper(key="date", freq=freq)
+    # only include accidents
+    df = df[df[column] != 'ACCIDENT ONLY']
     gr = df.groupby(grouper)[column]
     counts = gr.value_counts()
     counts.name = "count"
@@ -49,15 +53,24 @@ def aggregate_accidents(df, column):
     piv = counts.reset_index().pivot(**piv_kwargs).fillna(0.0).astype(int)
     return piv
 
+def aggregate_injuries(df, freq='q'):
+    """Aggregate injuries for each quarter by classification."""
+    column = 'degree_injury'
+    grouper = pd.Grouper(key="date", freq=freq)
+    # only include accidents
+    df = df[df[column] != 'ACCIDENT ONLY']
+    aggs = aggregate_columns(df, column=column, freq=freq)
+    return aggs.sum(axis=1)
 
-def aggregate_descriptive_stats(df, column):
+
+def aggregate_descriptive_stats(df, column, freq='q'):
     """Aggregate a dataframe by quarter for one columns descriptive stats."""
-    grouper = pd.Grouper(key="date", freq="q")
+    grouper = pd.Grouper(key="date", freq=freq)
     out = df.groupby(grouper)[column].describe()
     return out
 
 
-def normalize_accidents(accident_df, norm_df) -> pd.DataFrame:
+def normalize_injuries(accident_df, prod_df, mine_df=None, freq='q') -> pd.DataFrame:
     """
     Normalize accidents by each column in norm_df.
 
@@ -65,7 +78,7 @@ def normalize_accidents(accident_df, norm_df) -> pd.DataFrame:
     ----------
     accident_df
         A dataframe with aggregated accidents, grouped by quarter.
-    norm_df
+    prod_df
         A dataframe with normalization denominator, grouped by quarter.
         Often contains number of mines, hours worked, coal production, etc.
 
@@ -74,27 +87,13 @@ def normalize_accidents(accident_df, norm_df) -> pd.DataFrame:
     A multi-index column df with the first level being norm_df columns
     and the second level being accident_df columns.
     """
-    # trim both dfs down to match indicies
-    new_dates = sorted(set(accident_df.index) & set(norm_df.index))
-    adf = accident_df.loc[new_dates]
-    pdf = norm_df.loc[new_dates]
+    acc_ag = aggregate_injuries(accident_df, freq=freq)
+    norm = create_normalizer_df(prod_df, mines_df=mine_df, freq=freq)
     # assign a columns of one for no normalizations
-    pdf["no_normalization"] = 1
-    # get non, injury, and severe categories
-    category = dict(
-        injury=set(adf.columns) - set(NON_INJURY_DEGREES),
-        non_injury=NON_INJURY_DEGREES,
-        severe=SEVERE_INJURY_DEGREES,
-    )
-    multi_index = pd.MultiIndex.from_product([pdf.columns, list(category)])
-    out = pd.DataFrame(index=new_dates, columns=multi_index)
-    # calc normalized columns, populate dataframe
-    for category_name, cols in category.items():
-        adf_ = adf[cols].sum(axis=1)
-        for normalization_col_name, series in pdf.iteritems():
-            norm = adf_ / series
-            out.loc[:, (normalization_col_name, category_name)] = norm
-    return out
+    # norm["no_normalization"] = 1
+    # trim both dfs down to match indicies
+    # new_dates = sorted(set(accident_df.index) & set(prod_df.index))
+    return (acc_ag / norm.T).T
 
 
 def is_ug_coal(df):

@@ -36,7 +36,6 @@ msha_production:
     skiprows: [10899,]  # Found a bad value here, need to skip
 
 
-
 msha_definitions:
   type: msha.io.http.URLContentsDirectory
   filepath: data/01_raw/definitions
@@ -89,6 +88,7 @@ coal_gc_experience_df:
   filepath: data/coal_01_aggs/coal_gc_experience.pkl
 
 
+
 # --- coal visualizations
 coal_employee_mine_count_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
@@ -113,3 +113,8 @@ employee_numbers:
 accident_rate_by_size:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/coal_01_aggs/figures/accident_rate_by_size.png
+
+predicted_injury_rate:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/predicted_injury_rate.png
+

@@ -3,26 +3,30 @@ Nodes for calculating aggregated underground coal stats.
 """
 import matplotlib.pyplot as plt
 import pandas as pd
-
+import numpy as np
+from operator import iand
 from pandas.plotting import register_matplotlib_converters
+from functools import reduce
+from contextlib import suppress
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
 
+from msha.constants import GROUND_CONTROL_CLASSIFICATIONS, NON_INJURY_DEGREES
 from msha.core import (
-    normalize_accidents,
+    normalize_injuries,
     create_normalizer_df,
-    aggregate_accidents,
+    aggregate_injuries,
     aggregate_descriptive_stats,
     is_ug_coal,
     is_ground_control,
     is_eastern_us,
 )
 
-from msha.constants import GROUND_CONTROL_CLASSIFICATIONS
-
 register_matplotlib_converters()
 plt.style.use(["bmh"])
 
 
-def aggregate_injuries(df, **kwargs):
+def aggregate_injuries(df, freq='q', **kwargs):
     """
     Aggregate injuries.
 
@@ -36,58 +40,38 @@ def aggregate_injuries(df, **kwargs):
     # filter out non-selected method
     for colname, value in kwargs.items():
         df = df[df[colname] == value]
-    grouper = pd.Grouper(key="date", freq="q")
+    grouper = pd.Grouper(key="date", freq=freq)
     size = df.groupby(grouper).size()
     return size
 
 
-def is_ug_gc_accidents(df):
+def is_ug_gc_accidents(df, only_injuries=False):
     """Return a dataframe where each row is an ug gc accident."""
     con1 = is_ug_coal(df)
     con2 = is_ground_control(df)
+    out = con1 & con2
+    if only_injuries:
+        out &= (~df['degree_injury'].isin(NON_INJURY_DEGREES))
     return con1 & con2
 
 
 def ground_control_coal_accidents(df):
     """Create a dataframe of ground-control related coal accidents."""
-    df_sub = df[is_ug_coal(df) & is_ground_control(df)]
-    return aggregate_accidents(df_sub, column="degree_injury")
+    df_sub = df[is_ug_gc_accidents(df)]
+    return aggregate_injuries(df_sub, column="degree_injury")
 
 
 def aggregate_coal_production(prod_df, mines_df):
     """ Aggregate production by quarter. """
-    # filter production to only include underground coal mines
-    # and only the underground subunits
     prod, mines = get_ug_coal_prod_and_mines(prod_df, mines_df)
-    # mine_sub = mines_df[is_ug_coal(mines_df)]
-    # con2 = prod_df["subunit"] == "UNDERGROUND"
-    # prod_sub = prod_df[con2]
     return create_normalizer_df(prod, mines)
 
 
-def aggregate_coal_accidents_by_classification(df):
-    """Aggregate accidents by quarter. They must have caused an injury. """
-    # first select only ug coal for which there were injuries
-    has_injury = df["injury_count"].astype(bool)
-    df_sub = df[is_ug_coal(df) & has_injury]
-    return aggregate_accidents(df_sub, column="classification")
-
-
-def normalized_ground_control_coal_accidents(accident_df, prod_df):
-    """Create a dataframe, grouped by quarter, with normalized values. """
-    out = normalize_accidents(accident_df, prod_df)
-    return out
-
-
-def aggregate_gc_coal_experience_stats(accident_df):
-    """Return aggregated description stats of mine experience. """
-    con3 = accident_df["classification"].isin(GROUND_CONTROL_CLASSIFICATIONS)
-    sub_df = accident_df[is_ug_coal(accident_df) & con3]
-    return aggregate_descriptive_stats(sub_df, "total_experience")
-
-
-def get_label_size_label(col, col_num, col_count):
+def get_label_size_label(col, columns):
     """ Make nice labels for pandas groups. """
+    assert col in columns
+    col_count = len(columns)
+    col_num = sorted(list(columns)).index(col)
     if col_num == 0:
         return f"< {int(col.right)}"
     elif col_num == col_count - 1:
@@ -102,7 +86,7 @@ def get_ug_coal_prod_and_mines(prod_df, mine_df, qbins=4):
     df = prod_df[
         prod_df["mine_id"].isin(ug_coal_mines["mine_id"].unique())
         & (prod_df["subunit"] == "UNDERGROUND")
-    ]
+        ]
     # remove mines with zero employees/production
     df = df[(df["coal_production"] > 0) & (df["employee_count"] > 0)]
     # add quant bins
@@ -113,22 +97,25 @@ def get_ug_coal_prod_and_mines(prod_df, mine_df, qbins=4):
 # ----- Plotting functions
 
 
-def plot_employees_and_mines(prod_df, accidents_normed):
+def plot_employees_and_mines(prod_df, accident_df, mine_df):
     """Make a plot of employee count and number of coal mines."""
-    breakpoint()
     plt.clf()
+    acc = accident_df[is_ug_gc_accidents(accident_df)]
+    prod, mines = get_ug_coal_prod_and_mines(prod_df, mine_df)
+    norm = create_normalizer_df(prod, mines_df=mines)
+    injuries_normed = normalize_injuries(acc, prod)
     # define plot colors
     c1, c2 = ("#176EFF", "#FF4124")
     # plot production and active mine count
-    injuries = accidents_normed[("no_normalization", "injury")]
-    df = prod_df
+    injuries = injuries_normed["no_normalization"]
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5.5, 7), sharex=True)
     # ax1.set_xlabel("Date")
     ax1.set_ylabel("Employees ($10^3$)")
-    ax1.plot(df.index, df["employee_count"] / 1_000, color=c1)
+    ax1.plot(norm.index, norm["employee_count"] / 1_000, color=c1)
     ax1_twin = plt.twinx(ax1)
     ax1_twin.plot(injuries.index, injuries, color=c2)
     ax1_twin.set_ylabel("GC Injuries per Quarter")
+
     # color axis/ticks
     ax1_twin.spines["left"].set_color(c1)
     ax1_twin.spines["right"].set_color(c2)
@@ -138,9 +125,9 @@ def plot_employees_and_mines(prod_df, accidents_normed):
     # plot hours and tonnes
     c3, c4 = ("#8AB339", "#B35442")
     ax2_twin = plt.twinx(ax2)
-    ax2.plot(prod_df.index, prod_df["coal_production"] / 1_000_000, color=c3)
+    ax2.plot(norm.index, norm["coal_production"] / 1_000_000, color=c3)
     ax2.set_ylabel("Short Tones Produced ($10^6$)")
-    ax2_twin.plot(prod_df.index, prod_df["active_mine_count"], color=c4)
+    ax2_twin.plot(norm.index, norm["active_mine_count"], color=c4)
     ax2_twin.set_ylabel("Active UG Coal Mines")
     ax2.set_xlabel("Year")
     # color axis/ticks
@@ -154,10 +141,10 @@ def plot_employees_and_mines(prod_df, accidents_normed):
     return plt
 
 
-def plot_accidents(accident_df, experience_df):
+def plot_experience_and_accident_rates(prod_df, accident_df, mines_df):
     """Make a plot of employee count and number of coal mines."""
 
-    def plot_experience(ax):
+    def plot_experience(ax, experience_df):
         """ Plot the experience lines on axis"""
         colors = {"75%": "#B8260E", "50%": "black", "25%": "#2C7EB8"}
         for column, color in colors.items():
@@ -168,14 +155,17 @@ def plot_accidents(accident_df, experience_df):
         return ax
 
     plt.clf()
+    prod, mines = get_ug_coal_prod_and_mines(prod_df, mines_df)
+    injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
+    normed = normalize_injuries(injuries, prod, mines)
+    experience = aggregate_descriptive_stats(injuries, "total_experience")
+
     # define plot colors
     c1, c2 = ("#176EFF", "#FF4124")
-    # plot production and active mine count
-    hour_normed = accident_df[("hours_worked", "injury")] * 1_000_000
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5.5, 7), sharex=True)
     ax1.set_ylabel("GC Injuries per $10^6$ Hours")
-    ax1.plot(hour_normed.index, hour_normed, color=c1)
-    plot_experience(ax2)
+    ax1.plot(normed.index, normed['hours_worked'] * 1_000_000, color=c1)
+    plot_experience(ax2, experience_df=experience)
     ax2.set_xlabel("Date")
     plt.subplots_adjust(wspace=0, hspace=0.04)
     return plt
@@ -191,7 +181,7 @@ def plot_mining_method(accidents_df):
     lw = aggregate_injuries(df, ug_mining_method="Longwall")
     cm = aggregate_injuries(df, ug_mining_method="Continuous Mining")
     # plot
-    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
+    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5), )
     ax1.plot(lw.index, lw, label="longwall")
     ax1.plot(cm.index, cm, label="cont. miner")
     ax1.legend(title="Mining Method", fancybox=True)
@@ -261,41 +251,68 @@ def plot_employee_by_mine(prod_df, mine_df):
     """
     Create a histogram of number of mines with their size.
     """
-    plt.clf()
-    prod, ug_coal_mines = get_ug_coal_prod_and_mines(prod_df, mine_df)
-    # get 5 bins of employee count
-    grouper = pd.Grouper(freq="Y", key="date")
-    out = prod.groupby(grouper)["qcount"].value_counts()
-    out.name = "count"
-    # pivot out df
-    piv_kwargs = dict(index="date", columns="qcount", values="count")
-    piv = out.to_frame().reset_index().pivot(**piv_kwargs)
-    # piv_percentage = piv.divide(piv.sum(axis=1), axis=0) * 100
-    piv_percentage = piv
-    # now plot
-    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
-    dff = piv_percentage
-    for col_num in range(len(dff.columns)):
-        col = dff.columns[col_num]
-        if col_num == 0:
-            bottom = None
-        else:
-            bottom = dff[dff.columns[:col_num]].sum(axis=1).values
-        label = get_label_size_label(col, col_num, len(dff.columns))
-        ser = dff[col]
-        x_labels = ser.index.year
-        ax1.bar(x_labels, ser.values, label=label, bottom=bottom)
-        ax1.set_xticks(x_labels[::4])
-    # set labels
-    ax1.set_ylabel("% of UG Coal Mines")
-    ax1.set_xlabel("Year")
-    # put legend on top
-    # box = ax1.get_position()
-    # ax1.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
-    bbox_to_anchor = (0.92, 0.5)
-    # Put a legend to the right of the current axis
-    ax1.legend(loc="center left", bbox_to_anchor=bbox_to_anchor, title="Employee Count")
+    def _create_year_labels(df):
+        """
+        Create year labels from index. A number of spaces are added to the end
+        in order to maintain uniqueness.
+        """
+        x_labels = [str(x.year) + ' ' * (x.quarter - 1) for x in df.index]
+        return x_labels
+
+    def _plot_hist(ax, piv):
+        x_labels = _create_year_labels(piv)
+        reversed_columns = sorted(piv.columns, reverse=True)
+        for col_num, col in enumerate(reversed_columns):
+            if col_num == 0:
+                bottom = None
+            else:
+                cols_to_include = list(reversed_columns[:col_num])
+                bottom = piv[cols_to_include].sum(axis=1).values
+            label = get_label_size_label(col, piv.columns)
+            ser = piv[col]
+            ax.bar(x_labels, ser.values, label=label, bottom=bottom, width=1)
+        with suppress(Exception):
+            ax.set_xticks(x_labels[::16])
+        return ax
+
+
+    def plot_active_mines_by_employees(ax, prod):
+        """Create a plot of active mines binned by employee counts """
+        grouper = pd.Grouper(freq="q", key="date")
+        out = prod.groupby(grouper)["qcount"].value_counts()
+        out.name = 'mine_count'
+        # pivot out df
+        piv_kwargs = dict(index="date", columns="qcount", values="mine_count")
+        piv = out.to_frame().reset_index().pivot(**piv_kwargs)
+        _plot_hist(ax, piv)
+        # set labels
+        ax.set_ylabel("Active UG Coal Mines")
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles[::-1], labels[::-1], loc="top right", title="Employee Count")
+        return ax
+
+    def plot_employees_by_employer_size(ax, prod):
+        """ Plot the number of UG employees by mine size. """
+        grouper = pd.Grouper(freq="q", key="date")
+        out = prod.groupby([grouper, 'qcount'])["employee_count"].sum()
+        out.name = 'employee_count'
+        piv_kwargs = dict(index="date", columns="qcount", values="employee_count")
+        piv = out.to_frame().reset_index().pivot(**piv_kwargs) / 1_000
+        _plot_hist(ax, piv)
+        ax.set_ylabel('UG Coal Miners ($10^3$) ')
+        return ax
+
+    # def make_mine_employee_count()
+
+    prod_year = prod_df  # _get_production_by_year(prod_df)
+    prod, ug_coal_mines = get_ug_coal_prod_and_mines(prod_year, mine_df)
+    # init figures
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 7), sharex=True)
+    plot_active_mines_by_employees(ax1, prod)
+    plot_employees_by_employer_size(ax2, prod)
+    ax2.set_xlabel("Year")
+
     plt.tight_layout()
     return plt
 
@@ -314,30 +331,98 @@ def plot_accident_rates_by_size(prod_df, mine_df, accidents_df):
         return mine_id.astype(str) + "." + year
 
     plt.clf()
-    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
+    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5), )
     grouper = pd.Grouper(key="date", freq="y")
     prod_df, mine_df = get_ug_coal_prod_and_mines(prod_df, mine_df)
-    prod_df["qcount"] = pd.qcut(prod_df["employee_count"], 4)
     prod_df = prod_df.sort_values("qcount")
     prod_df["myq"] = _get_mine_year_quarter(prod_df)
     categories = sorted(prod_df["qcount"].unique())
     # get accidents for UG coal where injuries resulted
-    con1 = is_ug_coal(accidents_df)
-    con2 = is_ground_control(accidents_df)
-    con3 = accidents_df["degree_injury"] != "ACCIDENT ONLY"
-    acc_df = accidents_df[con1 & con2 & con3]
+    con1 = is_ug_gc_accidents(accidents_df)
+    con2 = accidents_df["degree_injury"] != "ACCIDENT ONLY"
+    acc_df = accidents_df[con1 & con2]
     acc_df["myq"] = _get_mine_year_quarter(acc_df)
+    # first create a dict of categories and prod
+    cat = {}
     for category, sub_prod in prod_df.groupby("qcount"):
+        cat[category] = sub_prod
+    # now iterate categories, starting with the largest, and plot
+    for category in sorted(cat, reverse=True):
+        sub_prod = cat[category]
         # get injuries associated with this group
-        label = get_label_size_label(
-            category, categories.index(category), len(categories)
-        )
+        label = get_label_size_label(category, categories)
         df = acc_df[acc_df["myq"].isin(sub_prod["myq"].unique())]
-        accidents = df.groupby(grouper).size()
+        injuries = df.groupby(grouper).size()
         hours = sub_prod.groupby(grouper)["hours_worked"].sum()
-        out = (accidents / hours).fillna(0) * 1_000_000
+        out = (injuries / hours).fillna(0) * 1_000_000
         ax1.plot(out.index, out, label=label)
-    plt.legend(title="Employee Count")
+
+    handles, labels = ax1.get_legend_handles_labels()
+    ax1.legend(handles[::-1], labels[::-1], loc="top right", title="Employee Count")
     ax1.set_xlabel("Year")
     ax1.set_ylabel("GC Injures per $10^6$ Hours ")
     return plt
+
+
+def plot_predicted_injury_rates(prod_df, accident_df, mines_df):
+    """Use simple features to predict accident rates and plot. """
+
+    def get_dates_with_no_nan(df_list):
+        """return a sorted list a index which contain no nans in any columns"""
+        common_index = reduce(iand, [set(x.index) for x in df_list])
+
+        for df in df_list:
+            has_nulls = df[df.isnull().any(axis=1)].index
+            for element in has_nulls:
+                if element in common_index:
+                    common_index.remove(element)
+            # out.add(list(df[df.isnull().any(axis=1)].index))
+        return sorted(common_index)
+
+    plt.clf()
+    # get features and such
+    prod, mines = get_ug_coal_prod_and_mines(prod_df, mines_df)
+    injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
+    normed = normalize_injuries(injuries, prod, mines)
+    experience = aggregate_descriptive_stats(injuries, "total_experience")
+    mine_size = aggregate_descriptive_stats(prod, 'employee_count')
+    index = get_dates_with_no_nan([normed, experience, mine_size])
+    norm, exp, size = normed.loc[index], experience.loc[index], mine_size.loc[index]
+
+    # Get y and standardize
+    Y = np.atleast_2d(norm['hours_worked'].values).T
+    y_scaler = StandardScaler().fit(Y)
+    y_scaled = y_scaler.transform(Y)
+
+
+    # get X and standardize
+    X = np.hstack([exp.drop(columns='count').values, size.values])
+    x_scaler = StandardScaler().fit(X)
+    x_scaled = x_scaler.transform(X)
+    #
+    lin_mod = LinearRegression(normalize=True).fit(x_scaled, y_scaled[:, 0])
+    y_pred = lin_mod.predict(x_scaled)
+
+    plt.plot(y_pred)
+    plt.plot(y_scaled)
+
+
+
+
+    breakpoint()
+    hw_norm = StandardScaler().fit_transform([norm['hours_worked'].values])
+    exp_norm = StandardScaler().fit_transform([exp['50%'].values])
+
+    cor = np.corrcoef(norm['hours_worked'], exp['50%'])
+
+    plt.plot(hw_norm, exp_norm, '.')
+    # plt.plot(hw_norm)
+    # plt.plot(exp_norm)
+    breakpoint()
+
+    print(normed)
+    plt.show()
+
+
+
+
