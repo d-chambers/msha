@@ -34,6 +34,7 @@ from kedro.pipeline import Pipeline
 
 import msha.pipelines.preprocess as preproc
 import msha.pipelines.coal as coal
+import msha.pipelines.metal_non_metal as mnm
 
 
 def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
@@ -48,10 +49,12 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     """
     pp_pipeline = preproc.create_pipeline()
     coal_pipe = coal.make_pipeline()
-    master = pp_pipeline + coal_pipe
+    metal_pipe = mnm.make_pipeline()
+    master = pp_pipeline + coal_pipe + metal_pipe
 
     return {
         "__default__": master,
         "preprocess": pp_pipeline,
         "coal": coal_pipe,
+        'mnm': metal_pipe,
     }

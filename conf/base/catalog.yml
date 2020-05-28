@@ -87,9 +87,8 @@ coal_gc_experience_df:
   type: pickle.PickleDataSet
   filepath: data/coal_01_aggs/coal_gc_experience.pkl
 
-
-
 # --- coal visualizations
+
 coal_employee_mine_count_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/coal_01_aggs/figures/overview.png
@@ -117,4 +116,15 @@ accident_rate_by_size:
 predicted_injury_rate:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/coal_01_aggs/figures/predicted_injury_rate.png
+
+injury_severity:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/injury_severity.png
+
+# --- MNM visualizations
+
+mnm_summary:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/summary.png
+
 

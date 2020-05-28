@@ -1,3 +1,7 @@
+"""
+Core functionality for MSHA
+"""
+import numpy as np
 import pandas as pd
 
 from msha.constants import (
@@ -6,6 +10,8 @@ from msha.constants import (
     GROUND_CONTROL_CLASSIFICATIONS,
     EASTERN_STATE_CODES,
 )
+
+from sklearn.linear_model import LinearRegression
 
 
 def create_normalizer_df(prod_df, mines_df=None, freq='q'):
@@ -45,7 +51,6 @@ def aggregate_columns(df, column, freq='q'):
     """Aggregate columns by """
     grouper = pd.Grouper(key="date", freq=freq)
     # only include accidents
-    df = df[df[column] != 'ACCIDENT ONLY']
     gr = df.groupby(grouper)[column]
     counts = gr.value_counts()
     counts.name = "count"
@@ -112,3 +117,57 @@ def is_ground_control(df):
 def is_eastern_us(df):
     """Return a series indicating if the mine is located east of missipi"""
     return df["state"].isin(set(EASTERN_STATE_CODES))
+
+
+# --- SKlearn stuff
+
+
+def select_k_best_regression(feature_df, target, k=4, regressor=LinearRegression, **kwargs):
+    """
+    Get the k best features for prediction.
+
+    Parameters
+    ----------
+    feature_df
+        The features
+    target
+        The target
+    k
+        The number of features to predict
+    regressor
+        A scikit learn regressor. Default is linear regression.
+
+    kwargs are passed to the regressor.
+
+    Returns
+    -------
+    A dataframe with the selected features.
+    """
+    def get_best_score(current, candidates):
+        """Get the name of the next best feature"""
+        # iterate each unused feature and track improvements to score
+        scores = {}
+        for name, series in candidates.iteritems():
+            cur = np.atleast_2d(current.values)
+            can = series.values[..., np.newaxis]
+            X = np.hstack([cur, can])
+            reg = regressor(**kwargs).fit(X, target.values)
+            scores[name] = np.mean(abs(reg.predict(X) - target.values))
+        return pd.Series(scores).argmin()
+
+    selected = []
+    while len(selected) < k:
+        current = feature_df[selected]
+        candidates = feature_df.drop(columns=selected)
+        # bail out if not enough features remain
+        if not len(candidates.columns):
+            break
+        name = get_best_score(current, candidates)
+        selected.append(name)
+    return feature_df[selected]
+
+
+
+
+
+

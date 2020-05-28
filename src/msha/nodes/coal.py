@@ -1,17 +1,19 @@
 """
 Nodes for calculating aggregated underground coal stats.
 """
+import datetime
+from contextlib import suppress
+from functools import reduce
+from operator import iand
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from operator import iand
 from pandas.plotting import register_matplotlib_converters
-from functools import reduce
-from contextlib import suppress
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, explained_variance_score
 
-from msha.constants import GROUND_CONTROL_CLASSIFICATIONS, NON_INJURY_DEGREES
+from msha.constants import NON_INJURY_DEGREES, DEGREE_MAP, DEGREE_ORDER
 from msha.core import (
     normalize_injuries,
     create_normalizer_df,
@@ -20,6 +22,9 @@ from msha.core import (
     is_ug_coal,
     is_ground_control,
     is_eastern_us,
+    select_k_best_regression,
+    aggregate_columns,
+
 )
 
 register_matplotlib_converters()
@@ -52,7 +57,7 @@ def is_ug_gc_accidents(df, only_injuries=False):
     out = con1 & con2
     if only_injuries:
         out &= (~df['degree_injury'].isin(NON_INJURY_DEGREES))
-    return con1 & con2
+    return out
 
 
 def ground_control_coal_accidents(df):
@@ -360,7 +365,7 @@ def plot_accident_rates_by_size(prod_df, mine_df, accidents_df):
     handles, labels = ax1.get_legend_handles_labels()
     ax1.legend(handles[::-1], labels[::-1], loc="top right", title="Employee Count")
     ax1.set_xlabel("Year")
-    ax1.set_ylabel("GC Injures per $10^6$ Hours ")
+    ax1.set_ylabel("GC Injures per $10^6$ Hours")
     return plt
 
 
@@ -379,50 +384,95 @@ def plot_predicted_injury_rates(prod_df, accident_df, mines_df):
             # out.add(list(df[df.isnull().any(axis=1)].index))
         return sorted(common_index)
 
+    def create_features_df(injuries, prod, norm_df):
+        """Create a dataframe of features to predict accident rates."""
+        grouper = pd.Grouper(key="date", freq="q")
+        # get features from production df
+        prod_cols = ['hours_worked', 'employee_count', 'coal_production']
+        prod_features = prod.groupby(grouper)[prod_cols].sum()
+        exp_df = aggregate_descriptive_stats(injuries, "total_experience")
+        size_df = aggregate_descriptive_stats(prod, 'employee_count')
+        # prod_per_hour = prod_features['coal_production'] / prod_features['hours_worked']
+        # prod_features['coal_per_hour'] = prod_per_hour
+        df_list = [exp_df, size_df, prod_features, norm_df]
+        index = get_dates_with_no_nan(df_list)
+        hours = prod_features.loc[index]
+        exp = exp_df.loc[index]
+        size = size_df.loc[index]
+        # drop number of accidents info from exp df
+        exp = exp.drop(columns='count')
+        out = pd.concat([exp, size, hours], keys=['exp', 'size', 'prod'], axis=1)
+        return out
+
     plt.clf()
     # get features and such
     prod, mines = get_ug_coal_prod_and_mines(prod_df, mines_df)
     injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
     normed = normalize_injuries(injuries, prod, mines)
-    experience = aggregate_descriptive_stats(injuries, "total_experience")
-    mine_size = aggregate_descriptive_stats(prod, 'employee_count')
-    index = get_dates_with_no_nan([normed, experience, mine_size])
-    norm, exp, size = normed.loc[index], experience.loc[index], mine_size.loc[index]
+    # get experience, mine sizes (by employee count) and hours worked
+    # combine into a feature dataframe
+    feature_df = create_features_df(injuries, prod, normed)
+    norm = normed.loc[feature_df.index]
+    # get GC injury rate (injuries per 10^6 hours)
+    target = norm['hours_worked'] * 1_000_000
+    # select the most important features
+    select_feats = select_k_best_regression(
+        feature_df, target, k=5, normalize=True,
+    )
+    X = select_feats.values
+    reg = LinearRegression(normalize=True).fit(X, target.values)
+    x_pred = reg.predict(X)
+    rmse = mean_squared_error(target.values, x_pred, squared=False)
+    explained_var = explained_variance_score(target.values, x_pred,)
+    # now plot
+    plt.figure(figsize=(5.5, 3.5))
+    plt.plot(target.index, target.values, color='b', label='GC injury rate')
+    plt.plot(select_feats.index, x_pred, color='r', label='predicted injury rate')
+    plt.legend()
+    plt.xlabel('Year')
+    plt.ylabel("GC Injures per $10^6$ Hours")
+    return plt
 
-    # Get y and standardize
-    Y = np.atleast_2d(norm['hours_worked'].values).T
-    y_scaler = StandardScaler().fit(Y)
-    y_scaled = y_scaler.transform(Y)
+
+def plot_gc_injury_severity(prod_df, accident_df, mines_df):
+    """Plot the severity of GC injuries a function of time."""
+
+    def plot_injuries(ax, injury_df):
+        """Plot the histogram. """
+        bottom = pd.Series(data=np.ones(len(injury_df)), index=injury_df.index)
+        for label, ser in injury_df.iteritems():
+            # ax.bar(ser.index, ser.values, label=label, bottom=bottom, width=300)
+            ax.semilogy(ser.index, ser.values, label=label)
+
+            bottom += ser
+        ax.set_ylabel('Number of Injuries')
+        # ax.set_yscale('log')
+        # with suppress(Exception):
+        #     ax.set_xticks(x_labels[::16])
+        return ax
 
 
-    # get X and standardize
-    X = np.hstack([exp.drop(columns='count').values, size.values])
-    x_scaler = StandardScaler().fit(X)
-    x_scaled = x_scaler.transform(X)
-    #
-    lin_mod = LinearRegression(normalize=True).fit(x_scaled, y_scaled[:, 0])
-    y_pred = lin_mod.predict(x_scaled)
+    plt.clf()
+    # get features and such
+    # prod, mines = get_ug_coal_prod_and_mines(prod_df, mines_df)
+    injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
+    injuries['degree'] = injuries['degree_injury'].map(DEGREE_MAP)
+    inj = aggregate_columns(injuries, 'degree', freq='y')
+    # drop current (not complete yet)
+    year = datetime.datetime.now().year
+    inj = inj.loc[inj.index.year != year][list(DEGREE_ORDER)]
+    # init plot and create hist
 
-    plt.plot(y_pred)
-    plt.plot(y_scaled)
+    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5), )
+    ax1.legend()
+    plot_injuries(ax1, inj)
 
 
+
+    plot_injuries()
 
 
     breakpoint()
-    hw_norm = StandardScaler().fit_transform([norm['hours_worked'].values])
-    exp_norm = StandardScaler().fit_transform([exp['50%'].values])
-
-    cor = np.corrcoef(norm['hours_worked'], exp['50%'])
-
-    plt.plot(hw_norm, exp_norm, '.')
-    # plt.plot(hw_norm)
-    # plt.plot(exp_norm)
-    breakpoint()
-
-    print(normed)
-    plt.show()
-
-
+    print(injuries)
 
 
