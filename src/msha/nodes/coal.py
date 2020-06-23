@@ -109,6 +109,7 @@ def plot_employees_and_mines(prod_df, accident_df, mine_df):
     prod, mines = get_ug_coal_prod_and_mines(prod_df, mine_df)
     norm = create_normalizer_df(prod, mines_df=mines)
     injuries_normed = normalize_injuries(acc, prod)
+
     # define plot colors
     c1, c2 = ("#176EFF", "#FF4124")
     # plot production and active mine count
@@ -472,7 +473,6 @@ def plot_gc_injury_severity(prod_df, accident_df, mines_df):
     plot_injuries()
 
 
-    breakpoint()
     print(injuries)
 
 

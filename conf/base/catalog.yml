@@ -41,6 +41,15 @@ msha_definitions:
   filepath: data/01_raw/definitions
 
 
+gold_price_monthly:
+  type: msha.io.http.CSVHTTPDataSet
+  file_url: "https://datahub.io/core/gold-prices/r/monthly.csv"
+  file_path: data/01_raw/gold_price_monthly.csv
+  force_download: False
+  load_args:
+    parse_dates: ['Date']
+
+
 # --- pre processing dataframes
 
 pp_accidents:
@@ -123,7 +132,11 @@ injury_severity:
 
 # --- MNM visualizations
 
-mnm_summary:
+gold_price:
+  type: pickle.PickleDataSet
+  filepath: data/02_clean/gold_price.pkl
+
+mnm_summary_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/mnm_01_aggs/figures/summary.png
 

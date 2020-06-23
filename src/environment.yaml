@@ -3,23 +3,17 @@ channels:
   - defaults
 dependencies:
   - python=3.7
-  - pytest
   - ipython
   - jupyter
   - jupyter_client
   - jupyterlab
-  - pytest-cov
-  - pytest-mock
-  - nbstripout
-  - wheel
   - pip
-  - gdal
   - black
-  - pyproj
   - pandas < 1.0
   - matplotlib
-  - kedro
+  - kedro==0.15.9
+  - scikit-learn
   - seaborn
   - pip:
-      - -rrequirements.txt
+#      - -rrequirements.txt
       - pdbpp
