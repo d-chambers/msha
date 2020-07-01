@@ -24,14 +24,13 @@ from msha.core import (
     is_eastern_us,
     select_k_best_regression,
     aggregate_columns,
-
 )
 
 register_matplotlib_converters()
 plt.style.use(["bmh"])
 
 
-def aggregate_injuries(df, freq='q', **kwargs):
+def aggregate_injuries(df, freq="q", **kwargs):
     """
     Aggregate injuries.
 
@@ -56,7 +55,7 @@ def is_ug_gc_accidents(df, only_injuries=False):
     con2 = is_ground_control(df)
     out = con1 & con2
     if only_injuries:
-        out &= (~df['degree_injury'].isin(NON_INJURY_DEGREES))
+        out &= ~df["degree_injury"].isin(NON_INJURY_DEGREES)
     return out
 
 
@@ -91,7 +90,7 @@ def get_ug_coal_prod_and_mines(prod_df, mine_df, qbins=4):
     df = prod_df[
         prod_df["mine_id"].isin(ug_coal_mines["mine_id"].unique())
         & (prod_df["subunit"] == "UNDERGROUND")
-        ]
+    ]
     # remove mines with zero employees/production
     df = df[(df["coal_production"] > 0) & (df["employee_count"] > 0)]
     # add quant bins
@@ -170,7 +169,7 @@ def plot_experience_and_accident_rates(prod_df, accident_df, mines_df):
     c1, c2 = ("#176EFF", "#FF4124")
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5.5, 7), sharex=True)
     ax1.set_ylabel("GC Injuries per $10^6$ Hours")
-    ax1.plot(normed.index, normed['hours_worked'] * 1_000_000, color=c1)
+    ax1.plot(normed.index, normed["hours_worked"] * 1_000_000, color=c1)
     plot_experience(ax2, experience_df=experience)
     ax2.set_xlabel("Date")
     plt.subplots_adjust(wspace=0, hspace=0.04)
@@ -187,7 +186,7 @@ def plot_mining_method(accidents_df):
     lw = aggregate_injuries(df, ug_mining_method="Longwall")
     cm = aggregate_injuries(df, ug_mining_method="Continuous Mining")
     # plot
-    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5), )
+    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
     ax1.plot(lw.index, lw, label="longwall")
     ax1.plot(cm.index, cm, label="cont. miner")
     ax1.legend(title="Mining Method", fancybox=True)
@@ -263,7 +262,7 @@ def plot_employee_by_mine(prod_df, mine_df):
         Create year labels from index. A number of spaces are added to the end
         in order to maintain uniqueness.
         """
-        x_labels = [str(x.year) + ' ' * (x.quarter - 1) for x in df.index]
+        x_labels = [str(x.year) + " " * (x.quarter - 1) for x in df.index]
         return x_labels
 
     def _plot_hist(ax, piv):
@@ -282,12 +281,11 @@ def plot_employee_by_mine(prod_df, mine_df):
             ax.set_xticks(x_labels[::16])
         return ax
 
-
     def plot_active_mines_by_employees(ax, prod):
         """Create a plot of active mines binned by employee counts """
         grouper = pd.Grouper(freq="q", key="date")
         out = prod.groupby(grouper)["qcount"].value_counts()
-        out.name = 'mine_count'
+        out.name = "mine_count"
         # pivot out df
         piv_kwargs = dict(index="date", columns="qcount", values="mine_count")
         piv = out.to_frame().reset_index().pivot(**piv_kwargs)
@@ -301,12 +299,12 @@ def plot_employee_by_mine(prod_df, mine_df):
     def plot_employees_by_employer_size(ax, prod):
         """ Plot the number of UG employees by mine size. """
         grouper = pd.Grouper(freq="q", key="date")
-        out = prod.groupby([grouper, 'qcount'])["employee_count"].sum()
-        out.name = 'employee_count'
+        out = prod.groupby([grouper, "qcount"])["employee_count"].sum()
+        out.name = "employee_count"
         piv_kwargs = dict(index="date", columns="qcount", values="employee_count")
         piv = out.to_frame().reset_index().pivot(**piv_kwargs) / 1_000
         _plot_hist(ax, piv)
-        ax.set_ylabel('UG Coal Miners ($10^3$) ')
+        ax.set_ylabel("UG Coal Miners ($10^3$) ")
         return ax
 
     # def make_mine_employee_count()
@@ -337,7 +335,7 @@ def plot_accident_rates_by_size(prod_df, mine_df, accidents_df):
         return mine_id.astype(str) + "." + year
 
     plt.clf()
-    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5), )
+    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
     grouper = pd.Grouper(key="date", freq="y")
     prod_df, mine_df = get_ug_coal_prod_and_mines(prod_df, mine_df)
     prod_df = prod_df.sort_values("qcount")
@@ -389,10 +387,10 @@ def plot_predicted_injury_rates(prod_df, accident_df, mines_df):
         """Create a dataframe of features to predict accident rates."""
         grouper = pd.Grouper(key="date", freq="q")
         # get features from production df
-        prod_cols = ['hours_worked', 'employee_count', 'coal_production']
+        prod_cols = ["hours_worked", "employee_count", "coal_production"]
         prod_features = prod.groupby(grouper)[prod_cols].sum()
         exp_df = aggregate_descriptive_stats(injuries, "total_experience")
-        size_df = aggregate_descriptive_stats(prod, 'employee_count')
+        size_df = aggregate_descriptive_stats(prod, "employee_count")
         # prod_per_hour = prod_features['coal_production'] / prod_features['hours_worked']
         # prod_features['coal_per_hour'] = prod_per_hour
         df_list = [exp_df, size_df, prod_features, norm_df]
@@ -401,8 +399,8 @@ def plot_predicted_injury_rates(prod_df, accident_df, mines_df):
         exp = exp_df.loc[index]
         size = size_df.loc[index]
         # drop number of accidents info from exp df
-        exp = exp.drop(columns='count')
-        out = pd.concat([exp, size, hours], keys=['exp', 'size', 'prod'], axis=1)
+        exp = exp.drop(columns="count")
+        out = pd.concat([exp, size, hours], keys=["exp", "size", "prod"], axis=1)
         return out
 
     plt.clf()
@@ -415,11 +413,9 @@ def plot_predicted_injury_rates(prod_df, accident_df, mines_df):
     feature_df = create_features_df(injuries, prod, normed)
     norm = normed.loc[feature_df.index]
     # get GC injury rate (injuries per 10^6 hours)
-    target = norm['hours_worked'] * 1_000_000
+    target = norm["hours_worked"] * 1_000_000
     # select the most important features
-    select_feats = select_k_best_regression(
-        feature_df, target, k=5, normalize=True,
-    )
+    select_feats = select_k_best_regression(feature_df, target, k=5, normalize=True,)
     X = select_feats.values
     reg = LinearRegression(normalize=True).fit(X, target.values)
     x_pred = reg.predict(X)
@@ -427,10 +423,10 @@ def plot_predicted_injury_rates(prod_df, accident_df, mines_df):
     explained_var = explained_variance_score(target.values, x_pred,)
     # now plot
     plt.figure(figsize=(5.5, 3.5))
-    plt.plot(target.index, target.values, color='b', label='GC injury rate')
-    plt.plot(select_feats.index, x_pred, color='r', label='predicted injury rate')
+    plt.plot(target.index, target.values, color="b", label="GC injury rate")
+    plt.plot(select_feats.index, x_pred, color="r", label="predicted injury rate")
     plt.legend()
-    plt.xlabel('Year')
+    plt.xlabel("Year")
     plt.ylabel("GC Injures per $10^6$ Hours")
     return plt
 
@@ -446,33 +442,27 @@ def plot_gc_injury_severity(prod_df, accident_df, mines_df):
             ax.semilogy(ser.index, ser.values, label=label)
 
             bottom += ser
-        ax.set_ylabel('Number of Injuries')
+        ax.set_ylabel("Number of Injuries")
         # ax.set_yscale('log')
         # with suppress(Exception):
         #     ax.set_xticks(x_labels[::16])
         return ax
 
-
     plt.clf()
     # get features and such
     # prod, mines = get_ug_coal_prod_and_mines(prod_df, mines_df)
     injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
-    injuries['degree'] = injuries['degree_injury'].map(DEGREE_MAP)
-    inj = aggregate_columns(injuries, 'degree', freq='y')
+    injuries["degree"] = injuries["degree_injury"].map(DEGREE_MAP)
+    inj = aggregate_columns(injuries, "degree", freq="y")
     # drop current (not complete yet)
     year = datetime.datetime.now().year
     inj = inj.loc[inj.index.year != year][list(DEGREE_ORDER)]
     # init plot and create hist
 
-    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5), )
+    fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
     ax1.legend()
     plot_injuries(ax1, inj)
 
-
-
     plot_injuries()
 
-
     print(injuries)
-
-

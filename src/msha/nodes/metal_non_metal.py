@@ -13,7 +13,12 @@ from pandas.plotting import register_matplotlib_converters
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, explained_variance_score
 
-from msha.constants import NON_INJURY_DEGREES, DEGREE_MAP, DEGREE_ORDER, GROUND_CONTROL_CLASSIFICATIONS
+from msha.constants import (
+    NON_INJURY_DEGREES,
+    DEGREE_MAP,
+    DEGREE_ORDER,
+    GROUND_CONTROL_CLASSIFICATIONS,
+)
 from msha.core import (
     normalize_injuries,
     create_normalizer_df,
@@ -24,7 +29,6 @@ from msha.core import (
     is_eastern_us,
     select_k_best_regression,
     aggregate_columns,
-
 )
 
 from msha.constants import NON_INJURY_DEGREES
@@ -32,27 +36,35 @@ from msha.constants import NON_INJURY_DEGREES
 register_matplotlib_converters()
 plt.style.use(["bmh"])
 
-
-def get_mnm_mines(mines):
+def get_ug_mnm_mines(mines, prod_df):
     """Filter dataframe to only include UG metal/non metal"""
-    return mines[mines['is_metal'] & mines['is_underground']]
+    con1 = mines['primary_canvass'] != 'Coal'
+    con2 = mines['current_mine_type'] == 'Underground'
+    mnm_mines = mines[con1 & con2]
+    # get minew which have some reported hours worked
+    prod_con1 =  prod_df['mine_id'].isin(mnm_mines['mine_id'])
+    is_underground = prod_df['subunit'] == 'UNDERGROUND'
+    sub_prod = prod_df[prod_con1 & is_underground]
+    prod_gb = sub_prod.groupby('mine_id')
+    has_hours = prod_gb['hours_worked'].sum() > 0
+    out = mnm_mines[mnm_mines['mine_id'].isin(has_hours.index)]
+    return out
 
 
 def get_ug_mnm_prod(prod, mines):
     """Return production and mine dfs that are UG metal/non-metal"""
-    ug_mnm_mines = get_mnm_mines(mines)
-    con1 = prod['mine_id'].isin(mines['mine_id'])
-    con2 = prod['subunit'] == 'UNDERGROUND'
+    con1 = prod["mine_id"].isin(mines["mine_id"])
+    con2 = prod["subunit"] == "UNDERGROUND"
     return prod[con1 & con2]
 
 
 def get_ug_mnm_gc_injury(accidents, mines):
     """Return a dataframe of injuries in mnm underground mines. """
     # first filter to mines
-    con1 = accidents['mine_id'].isin(mines['mine_id'])
-    con2 = accidents['is_underground']
-    con3 = ~accidents['degree_injury'].isin(NON_INJURY_DEGREES)
-    con4 = accidents['classification'].isin(GROUND_CONTROL_CLASSIFICATIONS)
+    con1 = accidents["mine_id"].isin(mines["mine_id"])
+    con2 = accidents["is_underground"]
+    con3 = ~accidents["degree_injury"].isin(NON_INJURY_DEGREES)
+    con4 = accidents["classification"].isin(GROUND_CONTROL_CLASSIFICATIONS)
     return accidents[con1 & con2 & con3 & con4]
 
 
@@ -67,24 +79,27 @@ def get_quarterly_gold_price(gold_price_monthly):
 
 def plot_mnm_summary(production, accidents, mines, gold_price):
     """Make a summary plot of mnm mines."""
-    mnm_mines = get_mnm_mines(mines)
+    mnm_mines = get_ug_mnm_mines(mines, production)
     prod = get_ug_mnm_prod(production, mnm_mines)
     injuries = get_ug_mnm_gc_injury(accidents, mnm_mines)
-    norm = create_normalizer_df(prod, mines_df=mines)
+    breakpoint()
+    norm = create_normalizer_df(prod, mines_df=mnm_mines)
     injuries_normed = normalize_injuries(injuries, prod)
     gp = gold_price.loc[norm.index]
+
+
 
     plt.clf()
     # define plot colors
     c1, c2 = ("#176EFF", "#FF4124")
     # plot production and active mine count
-    injuries = injuries_normed["no_normalization"]
+    injuries_total = injuries_normed["no_normalization"]
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5.5, 7), sharex=True)
     # ax1.set_xlabel("Date")
     ax1.set_ylabel("Employees ($10^3$)")
     ax1.plot(norm.index, norm["employee_count"] / 1_000, color=c1)
     ax1_twin = plt.twinx(ax1)
-    ax1_twin.plot(injuries.index, injuries, color=c2)
+    ax1_twin.plot(injuries_total.index, injuries_total, color=c2)
     ax1_twin.set_ylabel("GC Injuries per Quarter")
 
     # color axis/ticks
@@ -108,11 +123,9 @@ def plot_mnm_summary(production, accidents, mines, gold_price):
     ax2_twin.spines["right"].set_color(c4)
     ax2_twin.tick_params(axis="y", colors=c4)
     ax2.tick_params(axis="y", colors=c3)
+    ax2_twin.grid(False), ax2.grid(False)
+
     plt.tight_layout()
-
-
-
-
 
     ax2.set_xlabel("Year")
     # color axis/ticks
@@ -122,4 +135,12 @@ def plot_mnm_summary(production, accidents, mines, gold_price):
     return plt
 
 
-
+def plot_injuries_by_commodity(production, accidents, mines, gold_price):
+    """Plot mine count/injuries by commodity"""
+    mnm_mines = get_ug_mnm_mines(mines, production)
+    prod = get_ug_mnm_prod(production, mnm_mines)
+    injuries = get_ug_mnm_gc_injury(accidents, mnm_mines)
+    # join state to injury
+    # inj_with_state =
+    plt.plot([1,2,3])
+    return plt

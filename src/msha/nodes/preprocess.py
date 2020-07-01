@@ -46,6 +46,8 @@ COLUMN_MAP = {
     "AVG_EMPLOYEE_CNT": "employee_count",
     "HOURS_WORKED": None,
     "COAL_PRODUCTION": None,
+    "PRIMARY_SIC": None,
+
 }
 
 

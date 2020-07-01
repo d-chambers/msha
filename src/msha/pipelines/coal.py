@@ -56,7 +56,6 @@ nodes = [
         outputs="injury_severity",
         inputs=["pp_production", "pp_accidents", "pp_mines"],
     ),
-
 ]
 
 

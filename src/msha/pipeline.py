@@ -56,5 +56,5 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         "__default__": master,
         "preprocess": pp_pipeline,
         "coal": coal_pipe,
-        'mnm': metal_pipe,
+        "mnm": metal_pipe,
     }

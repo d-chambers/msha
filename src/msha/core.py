@@ -14,7 +14,7 @@ from msha.constants import (
 from sklearn.linear_model import LinearRegression
 
 
-def create_normalizer_df(prod_df, mines_df=None, freq='q'):
+def create_normalizer_df(prod_df, mines_df=None, freq="q"):
     """
     Create an aggregated dataframe of mine production/labor stats.
 
@@ -36,6 +36,10 @@ def create_normalizer_df(prod_df, mines_df=None, freq='q'):
     if mines_df is not None:
         mine_ids = mines_df["mine_id"].unique()
         prod_df = prod_df[prod_df["mine_id"].isin(mine_ids)]
+    # remove columns with no employees or hours worked
+    has_hours = prod_df['hours_worked'] > 0
+    has_employees = prod_df['employee_count'] > 0
+    prod_df = prod_df[has_hours & has_employees]
     # group by quarter, get stats, employee count,
     grouper = pd.Grouper(key="date", freq=freq)
     cols = ["employee_count", "hours_worked", "coal_production"]
@@ -43,11 +47,11 @@ def create_normalizer_df(prod_df, mines_df=None, freq='q'):
     out = gb[cols].sum()
     # add number of active mines
     out["active_mine_count"] = gb["mine_id"].unique().apply(lambda x: len(x))
-    out['no_normalization'] = 1
+    out["no_normalization"] = 1
     return out
 
 
-def aggregate_columns(df, column, freq='q'):
+def aggregate_columns(df, column, freq="q"):
     """Aggregate columns by """
     grouper = pd.Grouper(key="date", freq=freq)
     # only include accidents
@@ -58,24 +62,25 @@ def aggregate_columns(df, column, freq='q'):
     piv = counts.reset_index().pivot(**piv_kwargs).fillna(0.0).astype(int)
     return piv
 
-def aggregate_injuries(df, freq='q'):
+
+def aggregate_injuries(df, freq="q"):
     """Aggregate injuries for each quarter by classification."""
-    column = 'degree_injury'
+    column = "degree_injury"
     grouper = pd.Grouper(key="date", freq=freq)
     # only include accidents
-    df = df[df[column] != 'ACCIDENT ONLY']
+    df = df[df[column] != "ACCIDENT ONLY"]
     aggs = aggregate_columns(df, column=column, freq=freq)
     return aggs.sum(axis=1)
 
 
-def aggregate_descriptive_stats(df, column, freq='q'):
+def aggregate_descriptive_stats(df, column, freq="q"):
     """Aggregate a dataframe by quarter for one columns descriptive stats."""
     grouper = pd.Grouper(key="date", freq=freq)
     out = df.groupby(grouper)[column].describe()
     return out
 
 
-def normalize_injuries(accident_df, prod_df, mine_df=None, freq='q') -> pd.DataFrame:
+def normalize_injuries(accident_df, prod_df, mine_df=None, freq="q") -> pd.DataFrame:
     """
     Normalize accidents by each column in norm_df.
 
@@ -122,7 +127,9 @@ def is_eastern_us(df):
 # --- SKlearn stuff
 
 
-def select_k_best_regression(feature_df, target, k=4, regressor=LinearRegression, **kwargs):
+def select_k_best_regression(
+    feature_df, target, k=4, regressor=LinearRegression, **kwargs
+):
     """
     Get the k best features for prediction.
 
@@ -143,6 +150,7 @@ def select_k_best_regression(feature_df, target, k=4, regressor=LinearRegression
     -------
     A dataframe with the selected features.
     """
+
     def get_best_score(current, candidates):
         """Get the name of the next best feature"""
         # iterate each unused feature and track improvements to score
@@ -165,9 +173,3 @@ def select_k_best_regression(feature_df, target, k=4, regressor=LinearRegression
         name = get_best_score(current, candidates)
         selected.append(name)
     return feature_df[selected]
-
-
-
-
-
-
