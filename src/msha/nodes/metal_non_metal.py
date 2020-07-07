@@ -55,7 +55,9 @@ def get_ug_mnm_prod(prod, mines):
     """Return production and mine dfs that are UG metal/non-metal"""
     con1 = prod["mine_id"].isin(mines["mine_id"])
     con2 = prod["subunit"] == "UNDERGROUND"
-    return prod[con1 & con2]
+    # ensure some hours were worked
+    con3 = (prod['hours_worked'] > 0) | (prod['employee_count'] > 0)
+    return prod[con1 & con2 & con3]
 
 
 def get_ug_mnm_gc_injury(accidents, mines):
@@ -82,7 +84,6 @@ def plot_mnm_summary(production, accidents, mines, gold_price):
     mnm_mines = get_ug_mnm_mines(mines, production)
     prod = get_ug_mnm_prod(production, mnm_mines)
     injuries = get_ug_mnm_gc_injury(accidents, mnm_mines)
-    breakpoint()
     norm = create_normalizer_df(prod, mines_df=mnm_mines)
     injuries_normed = normalize_injuries(injuries, prod)
     gp = gold_price.loc[norm.index]
@@ -140,7 +141,37 @@ def plot_injuries_by_commodity(production, accidents, mines, gold_price):
     mnm_mines = get_ug_mnm_mines(mines, production)
     prod = get_ug_mnm_prod(production, mnm_mines)
     injuries = get_ug_mnm_gc_injury(accidents, mnm_mines)
-    # join state to injury
-    # inj_with_state =
-    plt.plot([1,2,3])
+    # join commodity to injury
+    comod = mnm_mines[['mine_id', 'primary_canvass']]
+    inj_with_comod = pd.merge(injuries, comod, on='mine_id')
+    prod_with_comod = pd.merge(prod, comod, on='mine_id')
+
+    grouper = pd.Grouper(key='date', freq='Y')
+    # now init mine count plot and injury plot
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5.5, 7), sharex=True)
+    for comod_name in comod['primary_canvass'].unique():
+        if comod_name == 'nan' or pd.isnull(comod_name):
+            continue
+        inj = inj_with_comod[inj_with_comod['primary_canvass'] == comod_name]
+        inj = inj[inj['date'] < '2020-01-01']
+        pro = prod_with_comod[prod_with_comod['primary_canvass'] == comod_name]
+        # remoce duplicate mine entries for each year
+        pro['year'] = pro['date'].dt.year
+        pro = pro.drop_duplicates(['year', 'mine_id'])
+        mine_count = pro.groupby(grouper).size()
+        miner_count = pro.groupby(grouper)['employee_count'].sum()
+        inj_count = inj.groupby(grouper).size()
+        ax2.plot(miner_count.index, miner_count.values, label=comod_name)
+        ax1.plot(inj_count.index, inj_count.values, label=comod_name)
+        if comod_name == 'Metal':
+            breakpoint()
+        # print('hey')
+
+    ax2.set_xlabel('Year')
+    ax2.set_ylabel('UG MNM Miners')
+    ax1.set_ylabel('GC Injuries per Year')
+    ax1.legend()
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=0, hspace=0.04)
+    breakpoint()
     return plt

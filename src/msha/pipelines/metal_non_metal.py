@@ -20,9 +20,9 @@ nodes = [
         inputs=["pp_production", "pp_accidents", "pp_mines", "gold_price"],
     ),
     node(
-        mnm.plot_injuries_by_state,
-        name="plot_state_stats",
-        outputs="mnm_state_plot",
+        mnm.plot_injuries_by_commodity,
+        name="plot_commodity_by_state",
+        outputs="mnm_commodity_plot",
         inputs=["pp_production", "pp_accidents", "pp_mines", "gold_price"],
     ),
 ]
