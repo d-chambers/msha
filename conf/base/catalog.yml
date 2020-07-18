@@ -96,6 +96,13 @@ coal_gc_experience_df:
   type: pickle.PickleDataSet
   filepath: data/coal_01_aggs/coal_gc_experience.pkl
 
+
+# Dataframe in which bumps and bursts were manually identified
+coal_assumed_bump_df:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/bumps.csv
+
+
 # --- coal visualizations
 
 coal_employee_mine_count_plot:
@@ -129,6 +136,10 @@ predicted_injury_rate:
 injury_severity:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/coal_01_aggs/figures/injury_severity.png
+
+coal_bump_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/coal_bumps.png
 
 # --- MNM visualizations
 
