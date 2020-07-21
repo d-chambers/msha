@@ -90,6 +90,11 @@ coal_gc_accidents_normalized_agg:
   type: pickle.PickleDataSet
   filepath: data/coal_01_aggs/accidents_normalized.pkl
 
+# A dataframe with probable bump-related injuries
+coal_bump_injuries:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_bumps.pkl
+
 
 # Dateframe with descriptive stats of miner experience by quarter
 coal_gc_experience_df:

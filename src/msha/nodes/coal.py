@@ -14,7 +14,7 @@ from pandas.plotting import register_matplotlib_converters
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, explained_variance_score
 
-from msha.constants import NON_INJURY_DEGREES, DEGREE_MAP, DEGREE_ORDER
+from msha.constants import NON_INJURY_DEGREES, DEGREE_MAP, DEGREE_ORDER, SEVERE_INJURY_DEGREES
 from msha.core import (
     normalize_injuries,
     create_normalizer_df,
@@ -98,6 +98,13 @@ def get_ug_coal_prod_and_mines(prod_df, mine_df, qbins=4):
     # add quant bins
     df["qcount"] = pd.qcut(df["employee_count"], qbins)
     return df, ug_coal_mines
+
+
+def get_coal_bump_df(accident_df,):
+    """Plot the number of bumps and bump-related GCIs each year."""
+    injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
+    bursty_gci = injuries[probably_burst(injuries)]
+    return bursty_gci
 
 
 # ----- Plotting functions
@@ -467,19 +474,27 @@ def plot_gc_injury_severity(prod_df, accident_df, mines_df):
     return fig
 
 
-def plot_coal_bumps(prod_df, accident_df, mines_df, assumed_bumps):
+def plot_coal_bumps(accident_df, coal_bumps):
     """Plot the number of bumps and bump-related GCIs each year."""
-    prod, mines = get_ug_coal_prod_and_mines(prod_df, mines_df)
     injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
+    non_burst = injuries[~injuries['narrative'].isin(coal_bumps['narrative'])]
+    burst_major = coal_bumps['degree_injury'].isin({"FATALITY"}).sum()
+    non_burst_major = non_burst['degree_injury'].isin({"FATALITY"}).sum()
+    breakpoint()
+
+
+
+
+
+
+
     merged = pd.merge(assumed_bumps, accident_df, how='left', on='narrative')
     # each bump should be accounted for in accident_df
     assert len(merged) == len(assumed_bumps)
     # test classifying bumps
-    bursty_bumps = probably_burst(assumed_bumps)
-
-
-    should_have_found = injuries[injuries['narrative'].isin(assumed_bumps['narrative'])]
-    bursty_gci = injuries[probably_burst(injuries)]
+    # bursty_bumps = probably_burst(assumed_bumps)
+    # should_have_found = injuries[injuries['narrative'].isin(assumed_bumps['narrative'])]
+    # bursty_gci = injuries[probably_burst(injuries)]
 
     # write output
 
