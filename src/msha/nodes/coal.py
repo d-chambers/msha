@@ -478,6 +478,9 @@ def plot_coal_bumps(accident_df, coal_bumps):
     """Plot the number of bumps and bump-related GCIs each year."""
     injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
     non_burst = injuries[~injuries['narrative'].isin(coal_bumps['narrative'])]
+    return
+
+
     burst_major = coal_bumps['degree_injury'].isin({"FATALITY"}).sum()
     non_burst_major = non_burst['degree_injury'].isin({"FATALITY"}).sum()
     breakpoint()

@@ -134,6 +134,7 @@ def is_eastern_us(df):
 
 
 def _is_bursty(nar_str):
+    """Parse a narrative string"""
 
 
     preproc = nar_str.replace('(', '').replace(')', '').lower()
@@ -148,13 +149,6 @@ def _is_bursty(nar_str):
     if nouns & bursty_set:
         return True
     # Try to determine if any of the bursty words are used as verbs
-    # referring to things that can bounce/burst
-    # bursty_tokens = [x for x in doc if str(x) in ROCKBURSTY_WORDS]
-    # for token in bursty_tokens:
-    #     if token.pos_ == 'VERB':
-    #         if str(token.head) in THINGS_THAT_BURST or str(token.head) in ROCKBURSTY_WORDS:
-    #             return True
-    #
     can_burst_tokens = [x for x in doc if str(x) in THINGS_THAT_BURST]
     for token in can_burst_tokens:
         isnoun = token.pos_ in {'NOUN', 'PROPN'}

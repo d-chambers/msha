@@ -87,9 +87,6 @@ def plot_mnm_summary(production, accidents, mines, gold_price):
     norm = create_normalizer_df(prod, mines_df=mnm_mines)
     injuries_normed = normalize_injuries(injuries, prod)
     gp = gold_price.loc[norm.index]
-
-
-
     plt.clf()
     # define plot colors
     c1, c2 = ("#176EFF", "#FF4124")
