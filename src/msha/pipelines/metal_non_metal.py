@@ -21,9 +21,15 @@ nodes = [
     ),
     node(
         mnm.plot_injuries_by_commodity,
-        name="plot_commodity_by_state",
+        name="plot_commodity",
         outputs="mnm_commodity_plot",
         inputs=["pp_production", "pp_accidents", "pp_mines", "gold_price"],
+    ),
+    node(
+        mnm.plot_miners_by_state,
+        name="plot_miners_by_state",
+        outputs="mnm_state_plot",
+        inputs=["pp_production", "pp_mines"],
     ),
 ]
 
