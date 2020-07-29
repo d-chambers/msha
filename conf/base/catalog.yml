@@ -143,3 +143,7 @@ mnm_summary_plot:
 mnm_commodity_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/mnm_01_aggs/figures/commodity.png
+
+mnm_state_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/states.png

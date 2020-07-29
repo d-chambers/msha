@@ -163,9 +163,6 @@ def plot_injuries_by_commodity(production, accidents, mines, gold_price):
         inj_count = inj.groupby(grouper).size()
         ax2.plot(miner_count.index, miner_count.values, label=comod_name)
         ax1.plot(inj_count.index, inj_count.values, label=comod_name)
-        if comod_name == 'Metal':
-            breakpoint()
-        # print('hey')
 
     ax2.set_xlabel('Year')
     ax2.set_ylabel('UG MNM Miners')
@@ -173,5 +170,70 @@ def plot_injuries_by_commodity(production, accidents, mines, gold_price):
     ax1.legend()
     plt.tight_layout()
     plt.subplots_adjust(wspace=0, hspace=0.04)
-    breakpoint()
     return plt
+
+
+def plot_miners_by_state(production, mines,):
+    """Plot a yearly histogram of miners by state. """
+
+    def plot_histogram(ax, piv, percent):
+        """Plot a histograme of employee count by state. """
+        states = piv.index.values
+        for num, state in enumerate(piv.index):
+            ser = piv.loc[state]
+            # get bottom
+            if num == 0:
+                bottom = None
+            else:
+                previous_states = states[:num]
+                bottom = piv.loc[previous_states].sum(axis=0).values
+            ax.bar(ser.index.values, ser.values, bottom=bottom, label=state)
+        pcent = int(percent * 100)
+        ax.legend(title=f'States ({pcent}%)', loc=2)
+        return ax
+
+    mnm_mines = get_ug_mnm_mines(mines, production)
+    prod = get_ug_mnm_prod(production, mnm_mines)
+    # join commodity to injury
+    comod = mnm_mines[['mine_id', 'primary_canvass',]]
+    prod_with_comod = pd.merge(prod, comod, on='mine_id')
+    prod_with_comod['year'] = prod_with_comod['date'].dt.year
+    num_states = 5
+
+    # get av num employees per year
+    gr = prod_with_comod.groupby(['mine_id', 'year', 'primary_canvass', 'state'])
+    emp_count_year = gr['employee_count'].mean().reset_index()
+    emp_gr = emp_count_year.groupby('primary_canvass')
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4.2),)
+    for ax, (canvas, sub_df) in zip(axes, emp_gr):
+        # find top 8 states (because 8 rhymes with state)
+        states_counts = (
+            sub_df.groupby(['state'])['employee_count']
+            .sum()
+            .sort_values(ascending=False)
+        )
+        top = states_counts.index[:num_states]
+        percent_covers = states_counts.loc[top].sum() / states_counts.sum()
+        # filter sub_df and get miners per year, per state
+        sub_df_filt = sub_df[sub_df['state'].isin(top)]
+        state_year = sub_df_filt.groupby(['state', 'year'])['employee_count'].sum()
+        piv = (
+            state_year
+            .reset_index()
+            .pivot(index='state', columns='year', values='employee_count')
+            .loc[top]
+        )
+        # create stacked histogram
+        plot_histogram(ax, piv, percent_covers)
+        ax.title.set_text(canvas)
+        if canvas == 'Metal':
+            ax.set_ylabel('UG Miners')
+        # plt.tight_layout()
+        plt.subplots_adjust(wspace=.15)
+
+
+    breakpoint()
+    print(prod_with_comod)
+
+
+
