@@ -56,6 +56,18 @@ nodes = [
         outputs="injury_severity",
         inputs=["pp_production", "pp_accidents", "pp_mines"],
     ),
+    node(
+        coal.get_coal_bump_df,
+        name='get_coal_bump_df',
+        outputs='coal_bump_injuries',
+        inputs=["pp_accidents"],
+    ),
+    node(
+        coal.plot_coal_bumps,
+        name="plot_coal_bumps",
+        outputs='coal_bump_plot',
+        inputs=["pp_accidents", "coal_bump_injuries"],
+    ),
 ]
 
 

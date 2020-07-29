@@ -48,3 +48,67 @@ DEGREE_ORDER = (
     "lost time",
     "no lost time",
 )
+
+
+# Words which only occur in rockbust narratives and not in non-rockburst ones
+STRICTLY_ROCKBURST_WORDS = {
+    'rib bounce',
+    'rib bump',
+    'rib burst',
+    'coal bounce',
+    'coal burst',
+    "mine bounce",
+    'coal bump',
+    'top bounce',
+    "bottom bump",
+    'pillar bounce',
+    'outburst',
+    'outbursts',
+    'rockburst',
+    'rockbursts',
+    'mountain bump',
+    'top bump',
+    'top bounce',
+    "face bounce",
+    "face bump",
+    "face burst",
+    "burst rib",
+    "had burst",
+    "floor burst",
+    "floor heave",
+    "floor bounce",
+    "roof bump",
+    "roof burst",
+    'burst',
+    # these are clearly overfitting on crapy grammer
+    'bounce on tail1ate',
+    "SUDDENLY BURST".lower(),
+    "OLUTBURST".lower(),
+    "BOUNCED OCCURED".lower(),
+    "bumped-coal",
+    "severe bounce",
+    "outrburst",
+    "when it bounced",
+
+}
+
+ROCKBURSTY_WORDS = (
+    "bump",
+    "bumps",
+    "bump(s)",
+    "coal bump",
+    "coal bounce",
+    "burst",
+    "bounce",
+    "bounces",
+    'bounced',
+    'bursted',
+    "rockburst",
+    "outburst",
+    "rockbursts",
+    "outbursts",
+)
+
+THINGS_THAT_BURST = (
+    'top', 'back', 'pillar', 'coal', 'floor', 'rib',
+)

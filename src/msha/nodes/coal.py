@@ -2,6 +2,7 @@
 Nodes for calculating aggregated underground coal stats.
 """
 import datetime
+import pathlib
 from contextlib import suppress
 from functools import reduce
 from operator import iand
@@ -13,7 +14,7 @@ from pandas.plotting import register_matplotlib_converters
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, explained_variance_score
 
-from msha.constants import NON_INJURY_DEGREES, DEGREE_MAP, DEGREE_ORDER
+from msha.constants import NON_INJURY_DEGREES, DEGREE_MAP, DEGREE_ORDER, SEVERE_INJURY_DEGREES
 from msha.core import (
     normalize_injuries,
     create_normalizer_df,
@@ -24,6 +25,7 @@ from msha.core import (
     is_eastern_us,
     select_k_best_regression,
     aggregate_columns,
+    probably_burst,
 )
 
 register_matplotlib_converters()
@@ -96,6 +98,13 @@ def get_ug_coal_prod_and_mines(prod_df, mine_df, qbins=4):
     # add quant bins
     df["qcount"] = pd.qcut(df["employee_count"], qbins)
     return df, ug_coal_mines
+
+
+def get_coal_bump_df(accident_df,):
+    """Plot the number of bumps and bump-related GCIs each year."""
+    injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
+    bursty_gci = injuries[probably_burst(injuries)]
+    return bursty_gci
 
 
 # ----- Plotting functions
@@ -462,7 +471,44 @@ def plot_gc_injury_severity(prod_df, accident_df, mines_df):
     fig, ax1 = plt.subplots(1, 1, figsize=(5.5, 3.5),)
     ax1.legend()
     plot_injuries(ax1, inj)
+    return fig
 
-    plot_injuries()
 
-    print(injuries)
+def plot_coal_bumps(accident_df, coal_bumps):
+    """Plot the number of bumps and bump-related GCIs each year."""
+    injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
+    non_burst = injuries[~injuries['narrative'].isin(coal_bumps['narrative'])]
+    burst_major = coal_bumps['degree_injury'].isin({"FATALITY"}).sum()
+    non_burst_major = non_burst['degree_injury'].isin({"FATALITY"}).sum()
+    breakpoint()
+
+
+
+
+
+
+
+    merged = pd.merge(assumed_bumps, accident_df, how='left', on='narrative')
+    # each bump should be accounted for in accident_df
+    assert len(merged) == len(assumed_bumps)
+    # test classifying bumps
+    # bursty_bumps = probably_burst(assumed_bumps)
+    # should_have_found = injuries[injuries['narrative'].isin(assumed_bumps['narrative'])]
+    # bursty_gci = injuries[probably_burst(injuries)]
+
+    # write output
+
+    #
+    # outstr = '\n\n\n'.join(
+    #     [f"{name}::: {x['narrative']}" for name, x in bursty_gci.iterrows()]
+    # )
+    # path = pathlib.Path('burst_desc.txt')
+    # with path.open('w') as fi:
+    #     fi.write(outstr)
+
+    breakpoint()
+
+
+    print(accident_df)
+
+

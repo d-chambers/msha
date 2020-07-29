@@ -9,9 +9,17 @@ from msha.constants import (
     SEVERE_INJURY_DEGREES,
     GROUND_CONTROL_CLASSIFICATIONS,
     EASTERN_STATE_CODES,
+    ROCKBURSTY_WORDS,
+    STRICTLY_ROCKBURST_WORDS,
+    THINGS_THAT_BURST,
 )
 
 from sklearn.linear_model import LinearRegression
+
+import spacy
+
+nlp = spacy.load('en_core_web_sm')
+bursty_set = set(ROCKBURSTY_WORDS)
 
 
 def create_normalizer_df(prod_df, mines_df=None, freq="q"):
@@ -124,6 +132,53 @@ def is_eastern_us(df):
     return df["state"].isin(set(EASTERN_STATE_CODES))
 
 
+
+def _is_bursty(nar_str):
+
+
+    preproc = nar_str.replace('(', '').replace(')', '').lower()
+    # First check if one of the strictly rockburst words is used
+    has_bursty_word = any([x in preproc for x in STRICTLY_ROCKBURST_WORDS])
+    if has_bursty_word:
+        return True
+    # if not use spacy to parse
+    doc = nlp(preproc)
+    # if any of the rockbursty words are used as Nouns return True
+    nouns = {str(x).lower() for x in doc if x.pos_ in {'NOUN', 'PROPN'}}
+    if nouns & bursty_set:
+        return True
+    # Try to determine if any of the bursty words are used as verbs
+    # referring to things that can bounce/burst
+    # bursty_tokens = [x for x in doc if str(x) in ROCKBURSTY_WORDS]
+    # for token in bursty_tokens:
+    #     if token.pos_ == 'VERB':
+    #         if str(token.head) in THINGS_THAT_BURST or str(token.head) in ROCKBURSTY_WORDS:
+    #             return True
+    #
+    can_burst_tokens = [x for x in doc if str(x) in THINGS_THAT_BURST]
+    for token in can_burst_tokens:
+        isnoun = token.pos_ in {'NOUN', 'PROPN'}
+        if str(token.head) in ROCKBURSTY_WORDS and isnoun:
+            return True
+
+    bursty_tokens = [x for x in doc if str(x) in ROCKBURSTY_WORDS]
+    for token in bursty_tokens:
+        if token.pos_ == 'VERB':
+            if str(token.head) in THINGS_THAT_BURST: #  or str(token.head) in ROCKBURSTY_WORDS:
+                # if str(token.head) in THINGS_THAT_BURST or str(token.head) in ROCKBURSTY_WORDS
+
+                return True
+    return False
+
+
+def probably_burst(df):
+    """return a series indicating if the accidents are likely 'rockbursty' """
+
+    is_bumpy = df['narrative'].map(_is_bursty)
+    return is_bumpy
+
+
+
 # --- SKlearn stuff
 
 
@@ -173,3 +228,10 @@ def select_k_best_regression(
         name = get_best_score(current, candidates)
         selected.append(name)
     return feature_df[selected]
+
+
+if __name__ == "__main__":
+    bad = "While bolting top piece of coal rock fell and bounced off rt rib and back."
+    test_str= "Employee was operating the shear on the longwall when a rock fell out of the roof on the face side of the shear and bounced off top of the shear, landing on employee's leg and foot causing fracture to ankle"
+    breakpoint()
+    _is_bursty(test_str)
