@@ -14,7 +14,12 @@ from pandas.plotting import register_matplotlib_converters
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, explained_variance_score
 
-from msha.constants import NON_INJURY_DEGREES, DEGREE_MAP, DEGREE_ORDER, SEVERE_INJURY_DEGREES
+from msha.constants import (
+    NON_INJURY_DEGREES,
+    DEGREE_MAP,
+    DEGREE_ORDER,
+    SEVERE_INJURY_DEGREES,
+)
 from msha.core import (
     normalize_injuries,
     create_normalizer_df,
@@ -477,21 +482,14 @@ def plot_gc_injury_severity(prod_df, accident_df, mines_df):
 def plot_coal_bumps(accident_df, coal_bumps):
     """Plot the number of bumps and bump-related GCIs each year."""
     injuries = accident_df[is_ug_gc_accidents(accident_df, only_injuries=True)]
-    non_burst = injuries[~injuries['narrative'].isin(coal_bumps['narrative'])]
+    non_burst = injuries[~injuries["narrative"].isin(coal_bumps["narrative"])]
     return
 
-
-    burst_major = coal_bumps['degree_injury'].isin({"FATALITY"}).sum()
-    non_burst_major = non_burst['degree_injury'].isin({"FATALITY"}).sum()
+    burst_major = coal_bumps["degree_injury"].isin({"FATALITY"}).sum()
+    non_burst_major = non_burst["degree_injury"].isin({"FATALITY"}).sum()
     breakpoint()
 
-
-
-
-
-
-
-    merged = pd.merge(assumed_bumps, accident_df, how='left', on='narrative')
+    merged = pd.merge(assumed_bumps, accident_df, how="left", on="narrative")
     # each bump should be accounted for in accident_df
     assert len(merged) == len(assumed_bumps)
     # test classifying bumps
@@ -511,7 +509,4 @@ def plot_coal_bumps(accident_df, coal_bumps):
 
     breakpoint()
 
-
     print(accident_df)
-
-

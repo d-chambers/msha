@@ -52,23 +52,23 @@ DEGREE_ORDER = (
 
 # Words which only occur in rockbust narratives and not in non-rockburst ones
 STRICTLY_ROCKBURST_WORDS = {
-    'rib bounce',
-    'rib bump',
-    'rib burst',
-    'coal bounce',
-    'coal burst',
+    "rib bounce",
+    "rib bump",
+    "rib burst",
+    "coal bounce",
+    "coal burst",
     "mine bounce",
-    'coal bump',
-    'top bounce',
+    "coal bump",
+    "top bounce",
     "bottom bump",
-    'pillar bounce',
-    'outburst',
-    'outbursts',
-    'rockburst',
-    'rockbursts',
-    'mountain bump',
-    'top bump',
-    'top bounce',
+    "pillar bounce",
+    "outburst",
+    "outbursts",
+    "rockburst",
+    "rockbursts",
+    "mountain bump",
+    "top bump",
+    "top bounce",
     "face bounce",
     "face bump",
     "face burst",
@@ -79,9 +79,9 @@ STRICTLY_ROCKBURST_WORDS = {
     "floor bounce",
     "roof bump",
     "roof burst",
-    'burst',
+    "burst",
     # these are clearly overfitting on crapy grammer
-    'bounce on tail1ate',
+    "bounce on tail1ate",
     "SUDDENLY BURST".lower(),
     "OLUTBURST".lower(),
     "BOUNCED OCCURED".lower(),
@@ -89,7 +89,6 @@ STRICTLY_ROCKBURST_WORDS = {
     "severe bounce",
     "outrburst",
     "when it bounced",
-
 }
 
 ROCKBURSTY_WORDS = (
@@ -101,8 +100,8 @@ ROCKBURSTY_WORDS = (
     "burst",
     "bounce",
     "bounces",
-    'bounced',
-    'bursted',
+    "bounced",
+    "bursted",
     "rockburst",
     "outburst",
     "rockbursts",
@@ -110,5 +109,10 @@ ROCKBURSTY_WORDS = (
 )
 
 THINGS_THAT_BURST = (
-    'top', 'back', 'pillar', 'coal', 'floor', 'rib',
+    "top",
+    "back",
+    "pillar",
+    "coal",
+    "floor",
+    "rib",
 )

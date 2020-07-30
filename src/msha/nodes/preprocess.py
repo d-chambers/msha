@@ -47,7 +47,6 @@ COLUMN_MAP = {
     "HOURS_WORKED": None,
     "COAL_PRODUCTION": None,
     "PRIMARY_SIC": None,
-
 }
 
 

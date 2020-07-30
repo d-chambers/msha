@@ -18,7 +18,7 @@ from sklearn.linear_model import LinearRegression
 
 import spacy
 
-nlp = spacy.load('en_core_web_sm')
+nlp = spacy.load("en_core_web_sm")
 bursty_set = set(ROCKBURSTY_WORDS)
 
 
@@ -45,8 +45,8 @@ def create_normalizer_df(prod_df, mines_df=None, freq="q"):
         mine_ids = mines_df["mine_id"].unique()
         prod_df = prod_df[prod_df["mine_id"].isin(mine_ids)]
     # remove columns with no employees or hours worked
-    has_hours = prod_df['hours_worked'] > 0
-    has_employees = prod_df['employee_count'] > 0
+    has_hours = prod_df["hours_worked"] > 0
+    has_employees = prod_df["employee_count"] > 0
     prod_df = prod_df[has_hours & has_employees]
     # group by quarter, get stats, employee count,
     grouper = pd.Grouper(key="date", freq=freq)
@@ -132,12 +132,10 @@ def is_eastern_us(df):
     return df["state"].isin(set(EASTERN_STATE_CODES))
 
 
-
 def _is_bursty(nar_str):
     """Parse a narrative string"""
 
-
-    preproc = nar_str.replace('(', '').replace(')', '').lower()
+    preproc = nar_str.replace("(", "").replace(")", "").lower()
     # First check if one of the strictly rockburst words is used
     has_bursty_word = any([x in preproc for x in STRICTLY_ROCKBURST_WORDS])
     if has_bursty_word:
@@ -145,20 +143,22 @@ def _is_bursty(nar_str):
     # if not use spacy to parse
     doc = nlp(preproc)
     # if any of the rockbursty words are used as Nouns return True
-    nouns = {str(x).lower() for x in doc if x.pos_ in {'NOUN', 'PROPN'}}
+    nouns = {str(x).lower() for x in doc if x.pos_ in {"NOUN", "PROPN"}}
     if nouns & bursty_set:
         return True
     # Try to determine if any of the bursty words are used as verbs
     can_burst_tokens = [x for x in doc if str(x) in THINGS_THAT_BURST]
     for token in can_burst_tokens:
-        isnoun = token.pos_ in {'NOUN', 'PROPN'}
+        isnoun = token.pos_ in {"NOUN", "PROPN"}
         if str(token.head) in ROCKBURSTY_WORDS and isnoun:
             return True
 
     bursty_tokens = [x for x in doc if str(x) in ROCKBURSTY_WORDS]
     for token in bursty_tokens:
-        if token.pos_ == 'VERB':
-            if str(token.head) in THINGS_THAT_BURST: #  or str(token.head) in ROCKBURSTY_WORDS:
+        if token.pos_ == "VERB":
+            if (
+                str(token.head) in THINGS_THAT_BURST
+            ):  #  or str(token.head) in ROCKBURSTY_WORDS:
                 # if str(token.head) in THINGS_THAT_BURST or str(token.head) in ROCKBURSTY_WORDS
 
                 return True
@@ -168,9 +168,8 @@ def _is_bursty(nar_str):
 def probably_burst(df):
     """return a series indicating if the accidents are likely 'rockbursty' """
 
-    is_bumpy = df['narrative'].map(_is_bursty)
+    is_bumpy = df["narrative"].map(_is_bursty)
     return is_bumpy
-
 
 
 # --- SKlearn stuff
@@ -226,6 +225,6 @@ def select_k_best_regression(
 
 if __name__ == "__main__":
     bad = "While bolting top piece of coal rock fell and bounced off rt rib and back."
-    test_str= "Employee was operating the shear on the longwall when a rock fell out of the roof on the face side of the shear and bounced off top of the shear, landing on employee's leg and foot causing fracture to ankle"
+    test_str = "Employee was operating the shear on the longwall when a rock fell out of the roof on the face side of the shear and bounced off top of the shear, landing on employee's leg and foot causing fracture to ankle"
     breakpoint()
     _is_bursty(test_str)

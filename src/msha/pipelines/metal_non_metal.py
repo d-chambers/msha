@@ -26,10 +26,10 @@ nodes = [
         inputs=["pp_production", "pp_accidents", "pp_mines", "gold_price"],
     ),
     node(
-        mnm.plot_miners_by_state,
+        mnm.plot_by_state,
         name="plot_miners_by_state",
         outputs="mnm_state_plot",
-        inputs=["pp_production", "pp_mines"],
+        inputs=["pp_production", "pp_mines", "pp_accidents"],
     ),
 ]
 
