@@ -14,11 +14,16 @@ from msha.constants import (
     THINGS_THAT_BURST,
 )
 
+from datetime import datetime, timezone
+
+
 from sklearn.linear_model import LinearRegression
 
 import spacy
 
-nlp = spacy.load("en_core_web_sm")
+now_utc = datetime.now(timezone.utc)
+current_year = now_utc.year
+
 bursty_set = set(ROCKBURSTY_WORDS)
 
 
@@ -134,6 +139,7 @@ def is_eastern_us(df):
 
 def _is_bursty(nar_str):
     """Parse a narrative string"""
+    nlp = spacy.load("en_core_web_sm")
 
     preproc = nar_str.replace("(", "").replace(")", "").lower()
     # First check if one of the strictly rockburst words is used

@@ -9,6 +9,7 @@ from msha.constants import NON_INJURY_DEGREES
 from msha.core import (
     normalize_injuries,
     create_normalizer_df,
+    current_year
 )
 from pandas.plotting import register_matplotlib_converters
 
@@ -164,6 +165,8 @@ def plot_by_state(production, mines, accidents, num_states=6):
         gr = prod_with_comod.groupby(["mine_id", "year", "primary_canvass", "state"])
         emp_count_year = gr["employee_count"].mean().reset_index()
         employee_count = emp_count_year.groupby(gcols)["employee_count"].sum().round()
+        employee_count /= 1000.
+
         hrs_worked = gr["hours_worked"].mean().reset_index()
         hrs_worked_year = hrs_worked.groupby(gcols)["hours_worked"].sum().round()
 
@@ -179,6 +182,7 @@ def plot_by_state(production, mines, accidents, num_states=6):
             .reset_index()
         )
         out["injury_rate"] = (out["injuries"] / out["hours_worked"]) * 1_000_000
+        out = out[out['year'] < current_year]
         return out
 
     def get_top_states(df):
@@ -224,7 +228,7 @@ def plot_by_state(production, mines, accidents, num_states=6):
             )
         if show_legend:
             handles, labels = ax.get_legend_handles_labels()
-            ax.legend(reversed(handles), reversed(labels), title='State', loc=2)
+            ax.legend(reversed(handles), reversed(labels), title='State', loc='upper right')
 
         return ax
 
@@ -249,17 +253,20 @@ def plot_by_state(production, mines, accidents, num_states=6):
         color_key = _get_legend_colors(emp)
         # create stacked histogram
         employee_ax, injury_ax, rate_ax = sub_axes
-        _plot_histogram(employee_ax, emp, color_key, show_legend=True)
-        _plot_histogram(injury_ax, inj, color_key, show_legend=False)
+        _plot_histogram(employee_ax, emp, color_key, show_legend=False)
+        _plot_histogram(injury_ax, inj, color_key, show_legend=True)
         _plot_injury_rates(rate_ax, inj_rate, color_key)
 
         # set titles
         emp_percent = f"{int(ratios['employee_count'] * 100):d}"
         inj_percent = f"{int(ratios['injuries'] * 100):d}"
+        employee_ax.title.set_text(canvas)
+
+
 
         if canvas == "Metal":
-            employee_ax.set_ylabel(f"UG Miners ({emp_percent}%)")
-            injury_ax.set_ylabel(f"Injuries ({inj_percent}%)")
+            employee_ax.set_ylabel(f"UG Miners ($10^3$)")
+            injury_ax.set_ylabel(f"GC Injuries")
             rate_ax.set_ylabel("GC Injures per $10^6$ Hours")
 
     mnm_mines = get_ug_mnm_mines(mines, production)
@@ -270,7 +277,8 @@ def plot_by_state(production, mines, accidents, num_states=6):
     df = get_injuries_and_employees_per_year(mnm_mines, prod, injuries)
 
     # init plot and axis
-    fig, axes = plt.subplots(3, 3, figsize=(16, 12), sharex=True)
+    unit = 0.7
+    fig, axes = plt.subplots(3, 3, figsize=(17 * unit, 12 * unit), sharex=True)
 
     for num, (canvas, sub_df) in enumerate(df.groupby("primary_canvass")):
         # find top n states
