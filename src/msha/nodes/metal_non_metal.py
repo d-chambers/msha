@@ -265,6 +265,7 @@ def plot_by_state(production, mines, accidents, num_states=6):
     mnm_mines = get_ug_mnm_mines(mines, production)
     prod = get_ug_mnm_prod(production, mnm_mines)
     injuries = get_ug_mnm_gc_injury(accidents, mnm_mines)
+    breakpoint()
 
     # Get average employees per year (by state)
     df = get_injuries_and_employees_per_year(mnm_mines, prod, injuries)
