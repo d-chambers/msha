@@ -163,3 +163,21 @@ mnm_commodity_plot:
 mnm_state_plot:
   type: kedro.extras.datasets.matplotlib.MatplotlibWriter
   filepath: data/mnm_01_aggs/figures/states.png
+
+# --- Surface visualizations
+
+gold_price:
+  type: pickle.PickleDataSet
+  filepath: data/02_clean/gold_price.pkl
+
+mnm_summary_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/summary.png
+
+mnm_commodity_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/commodity.png
+
+mnm_state_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/states.png

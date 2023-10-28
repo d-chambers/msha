@@ -1,3 +1,4 @@
+name: msha
 channels:
   - conda-forge
   - defaults
