@@ -1,0 +1,16 @@
+name: msha
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - ipython
+  - pip
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - requests
+  - seaborn
+  - pip:
+#      - -rrequirements.txt
+      - pdbpp

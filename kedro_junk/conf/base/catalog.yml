@@ -1,0 +1,183 @@
+
+# --- Raw Downloads
+
+msha_accidents:
+  type: msha.io.http.CSVHTTPDataSet
+  file_url: "https://arlweb.msha.gov/OpenGovernmentData/DataSets/Accidents.zip"
+  file_path: data/01_raw/msha_accidents.zip
+  force_download: False
+  load_args:
+    sep: '|'
+    encoding: latin
+    dtype: {'ACCIDENT_TIME': str}
+    parse_dates: ['ACCIDENT_DT']
+    na_values: ['NO VALUE FOUND']
+
+msha_mines:
+  type: msha.io.http.CSVHTTPDataSet
+  file_url: "https://arlweb.msha.gov/OpenGovernmentData/DataSets/Mines.zip"
+  file_path: data/01_raw/msha_mines.zip
+  force_download: False
+  load_args:
+    sep: '|'
+    encoding: latin
+    parse_dates: ['CURRENT_STATUS_DT', 'CURRENT_CONTROLLER_BEGIN_DT']
+    na_values: ['NO VALUE FOUND']
+
+msha_production:
+  type: msha.io.http.CSVHTTPDataSet
+  file_url: "https://arlweb.msha.gov/OpenGovernmentData/DataSets/MinesProdQuarterly.zip"
+  file_path: data/01_raw/msha_production.zip
+  force_download: False
+  load_args:
+    sep: "|"
+    encoding: latin
+    na_values: ['NO VALUE FOUND']
+    skiprows: [10899,]  # Found a bad value here, need to skip
+
+
+msha_definitions:
+  type: msha.io.http.URLContentsDirectory
+  filepath: data/01_raw/definitions
+
+
+gold_price_monthly:
+  type: msha.io.http.CSVHTTPDataSet
+  file_url: "https://datahub.io/core/gold-prices/r/monthly.csv"
+  file_path: data/01_raw/gold_price_monthly.csv
+  force_download: False
+  load_args:
+    parse_dates: ['Date']
+
+
+# --- pre processing dataframes
+
+pp_accidents:
+  type: pickle.PickleDataSet
+  filepath: data/02_clean/accidents.pkl
+
+pp_production:
+  type: pickle.PickleDataSet
+  filepath: data/02_clean/production.pkl
+
+pp_mines:
+  type: pickle.PickleDataSet
+  filepath: data/02_clean/mines.pkl
+
+
+# --- Coal specific
+
+# A dataframe with ug coal production aggregated by quarter
+coal_production_agg:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_ug_production.pkl
+
+# A dataframe with ug coal accidents of all types which caused
+# injury, aggregated by quarter
+coal_accidents_agg:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_ug_accidents.pkl
+
+# A dataframe with ug coal ground control related accidents.
+# columns are severity classification.
+coal_gc_accidents_agg:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_ug_gc_accients.pkl
+
+# A dataframe with ug coal ground control related accidents.
+# columns are severity classification.
+coal_gc_accidents_normalized_agg:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/accidents_normalized.pkl
+
+# A dataframe with probable bump-related injuries
+coal_bump_injuries:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_bumps.pkl
+
+
+# Dateframe with descriptive stats of miner experience by quarter
+coal_gc_experience_df:
+  type: pickle.PickleDataSet
+  filepath: data/coal_01_aggs/coal_gc_experience.pkl
+
+
+# Dataframe in which bumps and bursts were manually identified
+coal_assumed_bump_df:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/bumps.csv
+
+
+# --- coal visualizations
+
+coal_employee_mine_count_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/overview.png
+
+coal_accidents_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/accident_rate_years_exp.png
+
+coal_mining_method_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/mining_method.png
+
+regional_gc_accidents_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/regional_plot.png
+
+employee_numbers:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/employee_hists.png
+
+accident_rate_by_size:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/accident_rate_by_size.png
+
+predicted_injury_rate:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/predicted_injury_rate.png
+
+injury_severity:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/injury_severity.png
+
+coal_bump_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/coal_01_aggs/figures/coal_bumps.png
+
+# --- MNM visualizations
+
+gold_price:
+  type: pickle.PickleDataSet
+  filepath: data/02_clean/gold_price.pkl
+
+mnm_summary_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/summary.png
+
+mnm_commodity_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/commodity.png
+
+mnm_state_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/states.png
+
+# --- Surface visualizations
+
+gold_price:
+  type: pickle.PickleDataSet
+  filepath: data/02_clean/gold_price.pkl
+
+mnm_summary_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/summary.png
+
+mnm_commodity_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/commodity.png
+
+mnm_state_plot:
+  type: kedro.extras.datasets.matplotlib.MatplotlibWriter
+  filepath: data/mnm_01_aggs/figures/states.png
